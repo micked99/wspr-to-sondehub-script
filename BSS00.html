@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+    <meta charset="utf-8">
+	<meta http-equiv="refresh" content="120">
+    <title>BSS47 Balloon by BSS</title>
+    <style>
+      html, body, #map-canvas {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+      }
+
+    </style>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAgJTV3EJ2yMG7KRw1Su78hzloKPGzIrmg"></script>
+	<script src="js/nite-overlay.js"></script>
+<div id="map-canvas"></div>
+<script>
+
+var rad = function(x) {
+    return x * 3.14159 / 180;
+  };
+
+google.maps.LatLng.prototype.distance = function(other) {
+  var R = 6371000; // Earth mean radius in meter 6378137
+  var dLat = rad(other.lat() - this.lat());
+  var dLong = rad(other.lng() - this.lng());
+  var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(rad(this.lat())) * Math.cos(rad(other.lat())) *
+    Math.sin(dLong / 2) * Math.sin(dLong / 2);
+  var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  var d = R * c;
+  return d; // returns the distance in meter
+};
+
+function initialize() {
+  var mapOptions = {
+    zoom: 3,
+    center: new google.maps.LatLng(60, 24),
+    mapTypeId: google.maps.MapTypeId.TERRAIN,
+	scaleControl: true,
+    streetViewControl: false,
+    mapTypeControl: false
+  };
+
+  var map = new google.maps.Map(document.getElementById('map-canvas'),
+      mapOptions);
+	  
+	nite.init(map);
+	setInterval(function() { nite.refresh() }, 600000);
+	
+  var flightPlanCoordinates = [
+		new google.maps.LatLng(58.10416666666667,13.541666666666666),
+// #POSITION#
+	 ];
+
+  var flightPath = new google.maps.Polyline({
+    path: flightPlanCoordinates,
+    geodesic: true,
+    strokeColor: '#FF0033',
+    strokeOpacity: 1,
+    strokeWeight: 3
+  });
+
+  flightPath.setMap(map);
+
+  var distance = 0;
+
+  var flightPathValues = eval('flightPlanCoordinates');
+  for(var i = 0; i < flightPathValues.length; i++)
+  {
+    if(i !== flightPathValues.length - 1) {
+      distance += flightPathValues[i].distance(flightPathValues[i+1]);
+    }
+  }
+
+  distance = Math.round(distance/1000);
+
+   var balloonMarker = new google.maps.Marker({
+    position: flightPlanCoordinates[flightPlanCoordinates.length - 1],
+    icon: {url:"ico/icon.png" ,labelOrigin: new google.maps.Point(32, -5)},
+    map: map,
+    animation: google.maps.Animation.DROP,
+    });
+		
+	var contentString = '<b><center>BSS00</center></b><br>Yellow line = 15° solar'+
+'<p>Updated 2024-12-23 1308Z<br />Locator = JM38FA<br />Duration = 14mo 22d 16h 34m<br />Distance = '+ distance +'km<br />Altitude = 13320m<br />Speed = 60kt 111km/h<br />Solar = 3.54V, Temp = -2.0C, <br />GPS = 1, Sats = 1</p>'; 
+
+	var infowindow = new google.maps.InfoWindow({
+		content: contentString,
+		pixelOffset: new google.maps.Size(0, -20)
+	});
+
+	infowindow.open(map, balloonMarker);
+	
+	balloonMarker.addListener('click', function() {
+          infowindow.open(map, balloonMarker);
+        });
+	  
+	var latLng = balloonMarker.getPosition();
+	map.setCenter(latLng);	
+	
+// prediction stuff
+    // OUTPUT
+	var lat = -53.27083333333333; 
+	var lon = 132.54166666666666; 
+	var alt_launch = 13840; 
+    var alt_float = alt_launch + 10;
+	var launch_datetime = '2023-10-27T07:48:27Z'; 
+	var stop_datetime = '2023-10-29T07:48:27Z'; 
+	
+// Printout in the Browser console
+// console.log(lat, lon, alt_launch, alt_float, launch_datetime, stop_datetime);
+
+//    if (lat < 0) {
+//      lat = lat * -1;
+//      lat = 360 - lat;
+//    }
+
+//    if (lon < 0) {
+//      lon = lon * -1;
+//      lon = 360 - lon;
+//    }
+
+//    $.getJSON("https://predict.cusf.co.uk/api/v1/?profile=float_profile&launch_latitude="+lat+"&launch_longitude="+lon+"&launch_altitude="+alt_launch+"&float_altitude="+alt_float+"&ascent_rate=30&launch_datetime="+launch_datetime+"&stop_datetime="+stop_datetime+"", function(result) {
+
+    $.getJSON("https://api.v2.sondehub.org/tawhiri?profile=float_profile&launch_latitude="+lat+"&launch_longitude="+lon+"&launch_altitude="+alt_launch+"&float_altitude="+alt_float+"&ascent_rate=30&launch_datetime="+launch_datetime+"&stop_datetime="+stop_datetime+"", function(result) {
+
+      var i;
+      var cordinates = [];
+	  var trajectory = [];
+
+      for (i = 0; i < result.prediction[1].trajectory.length; i++) {
+        cordinates[i] = {
+          lat: Number(result.prediction[1].trajectory[i].latitude),
+          lng: Number(result.prediction[1].trajectory[i].longitude)
+        };
+      }
+      flightPath_prediction = new google.maps.Polyline({
+        path: cordinates,
+		geodesic: true,
+        strokeColor: '#00008B',
+        strokeOpacity: 0.3,
+        strokeWeight: 2
+      });
+      flightPath_prediction.setMap(map);
+    });
+}
+
+google.maps.event.addDomListener(window, 'load', initialize);
+
+
+    </script>
+  </head>
+  <body>
+<div style="position: absolute; left: 0px; bottom:28px; z-index: 2; width: 100px; height: 100px;"><img alt="" src="ico/badge.png" draggable="false" style="user-select: none; border: 0px; padding: 0px; margin: 0px; width: 100px; height: 100px; position: absolute;"></div>
+  </body>
+</html>

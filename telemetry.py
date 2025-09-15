@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/python3.6
 
 from base64 import b64encode
 import configparser
@@ -6,18 +6,14 @@ import csv
 import datetime
 from datetime import datetime,timedelta
 import gzip
-import hashlib
-import httplib2
-import logging
+import httplib2, socket
 import json
 import re
 import requests
 import sqlite3
 import sys
 import time
-
-from pprint import pformat
-
+import hashlib
 import maidenhead
 
 from balloon import *
@@ -30,6 +26,8 @@ pow2dec = {0:0,3:1,7:2,10:3,13:4,17:5,20:6,23:7,27:8,30:9,33:10,37:11,40:12,43:1
 config = configparser.ConfigParser()
 config.read('balloon.ini')
 habhub_callsign = config['main']['habhub_callsign']
+too_long = config['main']['too_long']
+push_html = config['main']['push_html']
 
 def trim(spots):
     # Clean out old spots
@@ -49,6 +47,14 @@ def trim(spots):
         print("Split pre",l,"splitc",spotc,"after:",len(spots))
         
     return spots
+
+#a = list(range(10))
+#a.reverse()
+#print(a)
+#a = trim(a)
+#print(a)
+#sys.exit(0)
+
 
 # Read new spots from database
 def readnewspotsdb():
@@ -109,9 +115,8 @@ def readnewspotsdb():
 
 
 def readgz(balloons, gzfile):
-    logging.info("Reading gz: %s", gzfile)
-
-    rows = 0
+    print("Reading gz:", gzfile)
+    
     spots = []
     calls = []
     for b in balloons:
@@ -121,41 +126,29 @@ def readgz(balloons, gzfile):
         spotsreader = csv.reader(csvfile, delimiter=',', quotechar='|')
 
         for row in spotsreader:
-            rows += 1
             # print(row)
             # Select correct fields in correct order
             row = [row[1], row[6], row[5], row[4], row[9], row[7], row[8],row[2],row[3],row[10]]
 
             # print(', '.join(row))
             for c in calls:
+#                print("Found", c, row)
                 if row[1] == c:
                     # Remove selfmade WSPR tranmissions
                     if len(row[5]) == 4:
                         row[0] = datetime.datetime.fromtimestamp(int(row[0]))
-                        row[3] = int(row[3])
-                        row[4] = int(row[4])
-
-                        # Strip "+" from dB
-                        row[6] = int(row[6].replace('+',''))
-                        row[9] = int(row[9])
-                        # print("Found", c, row)
+#                        print("Found", c, row)
                         spots.append(row)
 
-            if re.match('(^0|^1|^Q).[0-9].*', row[1]):
+            if re.match('(^0|^Q).[0-9].*', row[1]):
                 row[0] = datetime.datetime.fromtimestamp(int(row[0]))
-                
-                row[3] = int(row[3])
-                row[4] = int(row[4])
-                        
-                # Strip "+" from dB
-                row[6] = int(row[6].replace('+',''))
-                row[9] = int(row[9])
- 
+ #               print("Found", row)
                 spots.append(row)
-                # sys.exit(0)
 
-        print("Total rows", rows, "Nr-calls+telem:", len(spots))
+        print("Nr-calls+telem:", len(spots))
+
         csvfile.close()
+        print("Done reading")
 
     return spots
 
@@ -192,19 +185,27 @@ def decode_telemetry(spot_pos, spot_tele):
     c1 = spot_tele_call[1]
  #   print("C1=",c1)
     if c1.isalpha():
+        # print("c1=alpha")
         c1=ord(c1)-55
+        # print("new c1=",c1)    
     else:
         c1=ord(c1)-48
+
+    # print("new c1=",c1)  
 
     c2=ord(spot_tele_call[3])-65
     c3=ord(spot_tele_call[4])-65
     c4=ord(spot_tele_call[5])-65
+
+    # print("C:",c1,c2,c3,c4)
 
     # Convert locator to numbers
     l1=ord(spot_tele_loc[0])-65
     l2=ord(spot_tele_loc[1])-65
     l3=ord(spot_tele_loc[2])-48
     l4=ord(spot_tele_loc[3])-48
+
+    # print("L:",l1,l2,l3,l4)
 
     #
     # Convert power
@@ -234,7 +235,7 @@ def decode_telemetry(spot_pos, spot_tele):
     alt=(lsub2_tmp-lsub2*1068)*20
 
     # Handle bogus altitudes
-    if  alt > 14000:
+    if  alt > 16500:
  #       print("Bogus packet. Too high altitude!! locking to 9999")
         alt=9999
         
@@ -243,13 +244,15 @@ def decode_telemetry(spot_pos, spot_tele):
         alt=9998
 
     if alt == 0:
-#        print("Zero alt detected. Locking to 10000")
-        alt=10000
+#        print("Zero alt detected. Locking to 20")
+        alt=20
 
     # Sublocator
     lsub1=lsub1+65
     lsub2=lsub2+65
     subloc=(chr(lsub1)+chr(lsub2)).lower()
+
+    # print("alt:",alt,"subloc:", lsub1, lsub2_tmp, lsub2,subloc)
 
     # Temperature
     # 40*42*2*2
@@ -282,7 +285,7 @@ def decode_telemetry(spot_pos, spot_tele):
     t4=int(t3/4)
     speed=t4*2
     r7=t3-t4*4
-    gps=int(r7/2)
+    gps=r7/2
     sats=r7%2
 
     # print("T1-4,R7:",t1, t2, t3, t4, r7)
@@ -293,12 +296,12 @@ def decode_telemetry(spot_pos, spot_tele):
     loc=spot_pos_loc+subloc
     lat,lon = (maidenhead.toLoc(loc))
     
-    pstr =    ("Spot %s Call: %6s Latlon: %10.5f %10.5f Loc: %6s Alt: %5d Temp: %4.1f Batt: %5.2f Speed: %3d GPS: %1d Sats: %1d" %
+
+    print("%s Call: %6s Latlon: %10.5f %10.5f Loc: %6s Alt: %5d Temp: %6.2f Batt: %5.2f Speed: %3d GPS: %d Sats: %d" %
           (  spot_pos_time, spot_pos_call, lat, lon, loc, alt, temp, batt, speed, gps, sats ))
-    logging.info(pstr)
 
     telemetry = {'time':spot_pos_time, "call":spot_pos_call, "lat":lat, "lon":lon, "loc":loc, "alt": alt,
-                 "temp":round(temp,1), "batt":round(batt,3), "speed":speed, "gps":gps, "sats":sats }
+                 "temp":temp, "batt":batt, "speed":speed, "gps":gps, "sats":sats }
 
     return telemetry
 
@@ -354,17 +357,44 @@ def addsentdb(name, time_rec, sentence):
     return
 
 
+def addflightpathdb(name, time_rec, tel_lat, tel_lon, tel_alt, tel_speed):
+    con_path = None
+    time_sent = datetime.datetime.now()
+    
+    try:
+        con_path = sqlite3.connect('flightpath.db')
+        cur_path = con_path.cursor()
+#         cur_path.execute('drop table if exists sentspots')
+        cur_path.execute('create table if not exists sentspots(name varchar(15), time_sent varchar(20), time_received varchar(20), lat varchar(20), lon varchar(20), alt integer, speed integer)')
+        cur_path.execute("INSERT INTO sentspots VALUES(?,?,?,?,?,?,?)", (name, time_sent, time_rec, tel_lat, tel_lon, tel_alt, tel_speed))
+        data = cur_path.fetchall()
+        if not data:
+            con_path.commit()
+    except sqlite3.Error as e:
+        print("Database error: %s" % e)
+    except Exception as e:
+        print("Exception in _query: %s" % e)
+    finally:
+        if con_path:
+            con_path.close()
 
+    return
+
+
+import logging
+from pprint import pformat
+
+from subprocess import call
 
 def send_tlm_to_habitat2(sentence, callsign):
     result = call(["python2","./send_tlm_to_habitat.py", sentence,"sm0ulc"])
     return
 
 def send_tlm_to_habitat(sentence, callsign, spot_time):
+
     input=sentence
 
-    logging.info("Pushing data to habhub")
-
+#    print("SENTENCE:", sentence)
 
     if not sentence.endswith('\n'):
         sentence += '\n'
@@ -390,6 +420,8 @@ def send_tlm_to_habitat(sentence, callsign, spot_time):
             },
         }
 
+#    print("DATA HABHUB:", data)
+
     h = httplib2.Http("")
 
     resp, content = h.request(
@@ -398,12 +430,61 @@ def send_tlm_to_habitat(sentence, callsign, spot_time):
         headers={'Content-Type': 'application/json; charset=UTF-8'},
         body=json.dumps(data),
     )
+#    logging.info("Response dictionary")
+#    logging.info(pformat(resp))
+#    logging.info("Response Content Body")
+#    logging.info(pformat(content))
 
-    # print(resp['status'])
+#    print("Response dictionary")
+#    print(pformat(resp))
+#    print("Response Content Body")
+#    print(pformat(content))
+
+    print(resp['status'])
     if resp['status'] == '201':
-        logging.info("OK 201")
+        print("OK 201", input)
+#        sys.exit(0)
     elif resp['status'] == '403':
-        logging.info("Error 403 - already uploaded")
+        print("Error 403 - already uploaded")
+
+#    time.sleep(1)
+
+    return
+
+
+# send datas to sondehub
+def send_tlm_to_sondehub(telestr_sondehub):
+    resp = None
+    upload_timeout = 6   #6s timeout
+    upload_retries = 2
+    retries = 0
+
+    #print("TELESTRING TO SONDEHUB:", telestr_sondehub)
+
+    h = httplib2.Http(timeout=upload_timeout)
+
+    while retries < upload_retries:
+        try:
+            resp = h.request(
+                uri="http://api.v2.sondehub.org/amateur/telemetry",
+                method='PUT',
+                headers={'Content-Type': 'application/json; charset=UTF-8'},
+                body=json.dumps(telestr_sondehub),
+            )
+        except Exception as e:
+            print("Upload to SondeHub failed: %s" % str(e))
+            return
+    
+        if resp:
+            if resp[0]['status'] == '500':
+                # Server Error, Retry.
+                print("FAIL, RETRY UPLOAD AGAIN!")
+                retries += 1
+                continue
+            
+            if resp[0]['status'] == '200':
+                print("Upload to Sondehub successful")
+                return
 
     return
 
@@ -412,6 +493,7 @@ def send_tlm_to_habitat(sentence, callsign, spot_time):
 # Trim off older spots. Assuming oldest first!
 #
 def timetrim(spots, m):
+
     if len(spots) == 0:
         return spots
 
@@ -425,11 +507,22 @@ def timetrim(spots, m):
         spotc += 1
 #        print(r[0], "vs ", time_last)
         if r[0] < time_last:
+            #                if splitspotc == 0:
+#            print("split time found")
             splitspotc = spotc
+#            break
 
     l = len(spots)
     if splitspotc > 0:
         spots = spots[splitspotc:]
+ #       print("splitting")
+#    else:
+ #       print("no splitting")
+
+#    print("Split pre",l,"splitc",spotc,"after:",len(spots),"time-cut", time_last, splitspotc)
+
+#    for r in spots:
+#        print("splitlist:",r)
         
     return spots
 
@@ -437,35 +530,52 @@ def timetrim(spots, m):
 #
 # Main function - filter, process and upload of telemetry
 #
-def process_telemetry(spots, balloons, habhub_callsign, push_habhub, push_aprs, push_html):
-
+def process_telemetry(spots, balloons, habhub_callsign, push_habhub, push_sondehub, push_aprs):
     # Filter out telemetry-packets
     spots_tele = []
+
+    # check if there is an blacklist
+    try:
+        if config['main']['blacklist']:
+            blacklist = config['main']['blacklist']
+    except:
+        blacklist = []
+
     for row in spots:
         # print(row)
-        if re.match('(^0|^1|^Q).[0-9].*', row[1]):
+        if re.match('(^0|^Q).[0-9].*', row[1]):
             #         print(', '.join(row))
-            #if re.match('10\..*', row[2]) or re.match('14\..*', row[2]):
-            spots_tele.append(row)
+            if re.match('10\..*', row[2]) or re.match('28\..*', row[2]):
+                spot_minute = row[0].minute % 10
+                spots_tele.append(row)
 
     # 2018-05-03 13:06:00, QA5IQA, 7.040161, -8, JO53, 27, DH5RAE, JN68qv, 537
     # 0                    1       2         3   4     5   6       7       8 
 
     for b in balloons:
         if len(spots) == 0:
-            logging.info("out of spots in balloonloop. returning")
+            print("out of spots in balloonloop. returning")
             return spots
             
         balloon_name = b[0]
         balloon_call = b[1]
         balloon_mhz = b[2]
         balloon_channel = b[3]
-        balloon_timeslot = b[4]
-        balloon_html_push = b[6]
-        balloon_ssid = b[7]
-        balloon_aprs_comment = b[8]
+        balloon_slot = b[4]
+#        id_voltage_val = b[5]
         
-        logging.info("Name: %-8s Call: %6s MHz: %2d Channel: %2d Slot: %d" % (balloon_name, balloon_call, balloon_mhz, balloon_channel, balloon_timeslot))
+        try:
+            comment = b[6]
+            comment = comment.replace(",", "_")
+        except:
+            comment = None
+
+        try:
+            release = b[7]
+        except:
+            release = None
+
+        print("%s Name: %-6s Call: %6s MHz: %2d Channel: %2d " % (datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), balloon_name, balloon_call, balloon_mhz, balloon_channel), end='')
 
         # Filter out telemetry for active channel
         if balloon_channel < 10:
@@ -473,152 +583,313 @@ def process_telemetry(spots, balloons, habhub_callsign, push_habhub, push_aprs, 
         else:
             telem = [element for element in spots_tele if re.match('^Q.'+str(balloon_channel-10), element[1])]
 
-        # Filter out only selected band
-        telem = [element for element in telem if re.match(str(balloon_mhz)+'\..*', element[2])]
 
-        # If timeslot is used. filter out correct slot
-        if balloon_timeslot > 0:
-            telem = [element for element in telem if balloon_timeslot == int(element[0].minute % 10 / 2)]
-                                
-        #if len(telem) > 0:
-            # logging.info("time at top-tele spot: %s", str(telem[0]))
+        print("Spots:", len(spots),"Telemetry:", len(telem))
+#        if len(telem) > 0:
+#            print("time at top-tele spot", telem[0])
+#        time.sleep(2)
 
         # Loop through all spots and try to find matching telemetrypacket
         spot_last = spots[0]
-        spot_oldtime = datetime.datetime(1970, 1, 1, 1, 1)
-        bspots = []
+        spot_oldtime = datetime.datetime(1970, 1, 1, 1, 1) 
         for row in spots:
-            if balloon_call == row[1]:
-                bspots.append(row)
-                
-        logging.info("Spots: %d  Telemetry: %d", len(bspots), len(telem))
-        for row in bspots:
-            # logging.info("B: %s",row)
             spot_call = row[1]
-            
+
             if balloon_call == spot_call:
+#                print(row)
                 spot_time = row[0]
+    #            if posdata_cmp(row,spot_last):
+    #                print("Same payload")
+    #                sys.exit(0)
+    #            tdiff = spot_time
 
-                # Only check new uniq times
+    #                if  < timedelta(minutes=3) and tdiff > timedelta(minutes=0):
+
+                # Check if current spot is "much" older than latest telemetrypacket. If so, delete.
+#                if len(telem) > 0:
+    #                print("time at top-tele spot", telem[0][0], row, telem[0], telem[0][0]-spot_time)
+#                    if (telem[0][0] - spot_time) > timedelta(minutes=10):
+#                        print("very big timediff detected", len(spots),len(spots_tele))
+#                        spots.remove(row)
+#                        time.sleep(0.1)
+
+                 # Only check new uniq times
                 if spot_time != spot_oldtime:
-
-                    # [datetime.datetime(2019, 8, 1, 0, 22), 'YO3ICT', '14.097148', -23, -1, 'BM73', 10, 'ND7M', 'DM16', 2564]
-                    pstr = "Call: %s Time: %s Fq: %s Loc: %s Power: %s Reporter: %s" %  (row[1], row[0], row[2], row[5], row[6], row[7])
-                    logging.info(pstr)
                     spot_oldtime = spot_time
-                    spot_fq = row[2]
-                    spot_power = row[4]
-                    spot_loc = row[5]
+                    spot_fq = row[2]        
+                    spot_loc = row[4]
+                    spot_power = row[5]
                     spot_reporter = row[6]        
                     spot_reporter_loc = row[7]
-                    
+                    print(datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), "call", spot_call,"time",spot_time,"fq",spot_fq,"loc", spot_loc,"power",spot_power,"reporter",spot_reporter)
+
                 # Match positioningpacket with telemetrypackets
                     b_telem = []
+
                     for trow in telem:
-                        # print("tdiff:",trow, spot_time, type(spot_time))
+
+#                        print("tdiff:",trow, spot_time)
                         tdiff = trow[0] - spot_time
-                        #                    print(tdiff)
+    #                    print(tdiff)
 
-                        if tdiff > timedelta(minutes=8):
-                            logging.info("Too long interval, breaking %s", str(tdiff))
+                        if tdiff > timedelta(minutes=int(too_long)):
+                            print("too long interval, breaking", tdiff,trow)
                             break
-                        if tdiff > timedelta(minutes=0):
-                            b_telem.append(trow)
+                        
+                        # check if minutes are the same as in the ini and fill the datas to decode the telemetry
+                        print("FIRST COMPARISON OF MINUTES:", balloon_slot, spot_minute)
+                        if balloon_slot == spot_minute:
+                            #print("TROW[1]:", trow[1], "BLACKLIST:", blacklist)
+                            if trow[1] not in blacklist:
+                                #print("NOT IN BLACKLIST")
+                                # if the minutes are the same as in the ini
+                                # print("COMPARATION MINUTES TROW:", trow[0].minute % 10, balloon_slot)
+                                # if trow[0].minute % 10 == balloon_slot:
+                                td_minutes = -4    # original 0 minutes
+                                #print("TIMEDIFF:", tdiff, " > ", timedelta(minutes=td_minutes))
+                                print("TIME DIFFERENCE:", tdiff - timedelta(minutes=td_minutes))
+                                if tdiff >= timedelta(minutes=td_minutes):
+                                    try:
+                                        # TEST
+                                        tele_check = decode_telemetry(row, trow)
+                                        
+                                        raw_bat = tele_check['batt']
+                                        raw_bat = float(raw_bat)
+                                        #print("FLOAT RAW BAT:", raw_bat)
+                                        raw_bat = "{:.2f}".format(raw_bat)
+                                        #print("RAW BAT TWO DECIMAL:", raw_bat)
+                                        raw_bat = raw_bat.replace(".", "")
+                                        #print("RAW BAT WITHOUT POINT:", raw_bat)
+                                        raw_bat = int(float(raw_bat))
+                                        #print("RAW BAT FLOAT TO INT:", raw_bat)
+                                        #print("ID VOLTAGE VAL:", id_voltage_val)
+                                        id_voltage_val = float(b[5])
+                                        id_voltage_val = "{:.2f}".format(id_voltage_val)
+                                        id_voltage_val = id_voltage_val.replace(".", "")
+                                        id_voltage_val = int(id_voltage_val)
+                                        print("COMPARISON OF THE VOLTAGES:", id_voltage_val, raw_bat)                                        
+                                        
+                                        if id_voltage_val == raw_bat:
+                                            print("SECOND COMPARISON OF MINUTES:", trow[0].minute % 10, balloon_slot)
+                                            if trow[0].minute % 10 == balloon_slot:
+                                                b_telem.append(trow)
+                                                print("TELEMETRYDATAS:", b_telem)
+                                            
+                                        if id_voltage_val == 0:
+                                            print("SECOND COMPARISON OF MINUTES:", trow[0].minute % 10, balloon_slot)
+                                            if trow[0].minute % 10 == balloon_slot:
+                                                b_telem.append(trow)
+                                                print("TELEMETRYDATAS:", b_telem)
+                                    except:
+                                        print("ERROR FILL TELEMETRY!!!")
 
+    #                    time.sleep(0.1)    
                     # If suitable telemetry found, enter decoding!
                     if len(b_telem) > 0:
-                        logging.info("Found suitable telemetry rows: %d",len(b_telem))
+                        #print("COMPARISON 2 OF MINUTES:", b_telem[0][0].minute % 10, balloon_slot)
+                        if b_telem[0][0].minute % 10 == balloon_slot:
+#                            print("Found suitable telemetry rows: ",len(b_telem))
+    #                        print(b_telem[0])
+    #                        for r in b_telem:
+    #                            print("tele:", r, r[0]-spot_time)
 
-                        # print("call", spot_call,"time",spot_time,"fq",spot_fq,"loc", spot_loc,"power",spot_power,"reporter",spot_reporter)
-                        #logging.info(pstr)
-                        #logging.info("T: %s", b_telem[0])
-                        telemetry = decode_telemetry(row, b_telem[0])
-                        if len(telemetry) > 0:
-                            # Delete spot and telemetryspot
-                            try:
-                                spots.remove(row)
-                            except ValueError:
-                                pass
+                            print("call", spot_call,"time",spot_time,"fq",spot_fq,"loc", spot_loc,"power",spot_power,"reporter",spot_reporter)
+                            telemetry = decode_telemetry(row, b_telem[0])
+                            if len(telemetry) > 0:
+                                #                            # Delete spot and telemetryspot
+                                #                            if row in spots:
 
-                            for rt in b_telem:
-                                pstr = "%s Time: %s Fq: %s Loc: %s Power: %s Reporter: %s" %  (rt[1], rt[0], rt[2], rt[5], rt[6], rt[7]) 
-                                logging.info("Removing: %s", pstr)
                                 try:
-                                    spots.remove(rt)
+                                    spots.remove(row)
                                 except ValueError:
                                     pass
 
-                                try:
-                                    spots_tele.remove(rt)
-                                except ValueError:
-                                    pass
+                                for rt in b_telem:
+                                    print("Removing:", rt)
+                                    try:
+                                        spots.remove(rt)
+                                    except ValueError:
+                                        pass
 
-                                try:
-                                    telem.remove(rt)
-                                except ValueError:
-                                    pass
+                                    try:
+                                        spots_tele.remove(rt)
+                                    except ValueError:
+                                        pass
 
-                            # logging.info(telemetry)
+                                    try:
+                                        b_telem.remove(rt)
+                                    except ValueError:
+                                        pass
 
-                            # seqnr = int(((int(telemetry['time'].strftime('%s'))) / 120) % 100000)
-                            seqnr = int(telemetry['time'].strftime('%s'))
 
-                            # telemetry = [ spot_pos_time, spot_pos_call, lat, lon, loc, alt, temp, batt, speed, gps, sats ]
-                            telestr = "%s,%d,%s,%.5f,%.5f,%d,%d,%.2f,%.2f,%d,%d" % (  
-                                balloon_name, seqnr, telemetry['time'].strftime('%H:%M'), telemetry['lat'], telemetry['lon'],
-                                telemetry['alt'], telemetry['speed'], telemetry['temp'], telemetry['batt'], telemetry['gps'], telemetry['sats'])
+    #                            print("Telemetry ok!")
+    #                            print(telemetry)
 
-                            # Calculate and add XOR-checksum
-                            i=0
-                            checksum = 0
-                            while i < len(telestr):
-                                checksum = checksum ^ ord(telestr[i])
-                                i+=1
-                            telestr = "$$" + telestr + "*" + '{:x}'.format(int(checksum))
-                            logging.info("Telemetry: %s", telestr)
+                                # seqnr = int(((int(telemetry['time'].strftime('%s'))) / 120) % 100000)
+                                seqnr = int(telemetry['time'].strftime('%S'))
+#                                print(seqnr)
 
-                            # Check if string has been uploaded before and if not then add and upload
-                            if not checkifsentdb(telestr):
-                                # print("Unsent spot", telestr)
-
-                                print(push_habhub)
-                                # push_habhub = True
-                                if push_habhub:
-                                    # Send telemetry to habhub
-                                    send_tlm_to_habitat(telestr, habhub_callsign, spot_time)
+                                if comment != None:
+                                    # telemetry = [ spot_pos_time, spot_pos_call, lat, lon, loc, alt, temp, batt, speed, gps, sats, comment ]
+                                    telestr = "%s,%d,%s,%.5f,%.5f,%d,%d,%.2f,%.2f,%d,%d,%s" % (  
+                                        balloon_name, seqnr, telemetry['time'].strftime('%H:%M'), telemetry['lat'], telemetry['lon'],
+                                        telemetry['alt'], telemetry['speed'], telemetry['temp'], telemetry['batt'], telemetry['gps'], telemetry['sats'], comment)
                                 else:
-                                    logging.info("Not pushing to habhub")
+                                    # telemetry = [ spot_pos_time, spot_pos_call, lat, lon, loc, alt, temp, batt, speed, gps, sats ]
+                                    telestr = "%s,%d,%s,%.5f,%.5f,%d,%d,%.2f,%.2f,%d,%d" % (  
+                                        balloon_name, seqnr, telemetry['time'].strftime('%H:%M'), telemetry['lat'], telemetry['lon'],
+                                        telemetry['alt'], telemetry['speed'], telemetry['temp'], telemetry['batt'], telemetry['gps'], telemetry['sats'])
+   
+                                if push_sondehub  == 'True':
+                                    frequency_sondehub = float(spot_fq)
+#                                    date_created_sondehub = spot_time.strftime('%Y-%m-%dT%H:%m:%S.%fZ')
+                                    date_now_sondehub = datetime.datetime.utcnow().isoformat("T") + "Z"
 
-                                if push_aprs:
-                                    # Prep and push basic data to aprs.fi
-                                    sonde_data = {}
-                                    sonde_data["id"] = spot_call + "-" + balloon_ssid
-                                    sonde_data["lat"] = telemetry['lat']
-                                    sonde_data["lon"] = telemetry['lon']
-                                    sonde_data["alt"] = telemetry['alt']
-                                    sonde_data["speed"] = telemetry['speed']
-                                    sonde_data["temp"] = telemetry['temp']
-                                    sonde_data["batt"] = telemetry['batt']
-                                    sonde_data["comment"] = balloon_aprs_comment
-                                    logging.info("Pushing data to aprs.fi")
-                                    push_balloon_to_aprs(sonde_data)
-                                else:
-                                    logging.info("Not pushing to aprs.fi")
-
-                                if push_html and balloon_html_push:                                    
-                                    # Push basic data to ftp html
-                                    logging.info('\033[33m' + "Pushing data to html page" + '\033[0m')
-                                    push_balloon_to_html(telemetry)			 
-
+                                    lat_upload = '%.5f' % (telemetry['lat'])
+                                    lat_upload = float(lat_upload)
+                                    lon_upload = '%.5f' % (telemetry['lon'])
+                                    lon_upload = float(lon_upload)
+                                    alt_upload = '%.0f' % (telemetry['alt'])
+                                    alt_upload = float(alt_upload)
+                                    temp_upload = '%.2f' % (telemetry['temp'])
+                                    temp_upload = float(temp_upload)
+                                    vel_h_upload = '%.0f' % (telemetry['speed'])
+                                    vel_h_upload = float(vel_h_upload)
+                                    sats_upload = '%d' % (telemetry['sats'])
+                                    sats_upload = int(sats_upload)
+                                    batt_upload = '%.2f' % (telemetry['batt'])
+                                    batt_upload = float(batt_upload)
+                                    tx_frequency_upload = '%.6f' % (frequency_sondehub)
+                                    tx_frequency_upload = float(tx_frequency_upload)
                                     
-                                # Add sent string to history-db
-                                addsentdb(balloon_name, row[0], telestr)
+                                    if comment != None:
+                                        telestr_sondehub = [
+                                          {
+                                            "software_name": "%s" % ("DG4NOB_WSPR_UPLOADER"),
+                                            "software_version": "%s" % ("0.1"),
+                                            "uploader_callsign": "%s" % (habhub_callsign),
+#                                            "time_received": "%s" % (date_created_sondehub),
+                                            "time_received": "%s" % (date_now_sondehub),
+                                            "payload_callsign": "%s" % (balloon_name),
+#                                            "datetime": "%s" % (telemetry['time'].strftime('%Y-%m-%dT%H:%m:%S.%fZ')),
+                                            "datetime": "%s" % (date_now_sondehub),
+                                            "lat": lat_upload,
+                                            "lon": lon_upload,
+                                            "alt": alt_upload,
+#                                            "upload_time": "%s" % (date_now_sondehub),
+                                            "temp": temp_upload,
+#                                            "vel_h": vel_h_upload,
+                                            "sats": sats_upload,
+                                            "batt": batt_upload,
+                                            "modulation": "WSPR",
+                                            "tx_frequency": tx_frequency_upload,
+                                            "comment": comment
+                                          }
+                                        ]
+                                    else:
+                                        telestr_sondehub = [
+                                          {
+                                            "software_name": "%s" % ("DG4NOB_WSPR_UPLOADER"),
+                                            "software_version": "%s" % ("0.1"),
+                                            "uploader_callsign": "%s" % (habhub_callsign),
+#                                            "time_received": "%s" % (date_created_sondehub),
+                                            "time_received": "%s" % (date_now_sondehub),
+                                            "payload_callsign": "%s" % (balloon_name),
+#                                            "datetime": "%s" % (telemetry['time'].strftime('%Y-%m-%dT%H:%m:%S.%fZ')),
+                                            "datetime": "%s" % (date_now_sondehub),
+                                            "lat": lat_upload,
+                                            "lon": lon_upload,
+                                            "alt": alt_upload,
+#                                            "upload_time": "%s" % (date_now_sondehub),
+                                            "temp": temp_upload,
+#                                            "vel_h": vel_h_upload,
+                                            "sats": sats_upload,
+                                            "batt": batt_upload,
+                                            "modulation": "WSPR",
+                                            "tx_frequency": tx_frequency_upload,
+                                          }
+                                        ]
 
-                            else:
-                                logging.info("Already sent spot. Doing nothing")
+                                    #print("SONDEHUB STRING:", telestr_sondehub)
+                                
+                                # Calculate and add XOR-checksum
+                                i=0
+                                checksum = 0
+                                while i < len(telestr):
+                                    checksum = checksum ^ ord(telestr[i])
+                                    i+=1
+                                telestr = "$$" + telestr + "*" + '{:02x}'.format(int(checksum))
+    #                            print(telestr)
+
+                                # Check if string has been uploaded before and if not then add and upload
+                                if not checkifsentdb(telestr):
+                                #if telemetry['batt'] > 4.55 or telemetry['batt'] < 4.62:   #new Kevin battery filter
+#                                     print("Unsent spot", telestr)
+                                    if push_habhub == 'True':
+                                        # Send telemetry to habhub
+                                        #                                send_tlm_to_habitat2(telestr, habhub_callsign)
+                                        print("Pushing data to habhub")
+                                        send_tlm_to_habitat(telestr, habhub_callsign, spot_time)
+
+                                    if push_sondehub == 'True':
+                                        # Send telemetry to sondehub
+                                        print("Pushing data to sondehub")
+                                        send_tlm_to_sondehub(telestr_sondehub)         
+                                        
+                                    if push_aprs == 'True':
+                                        # Prep and push basic data to aprs.fi
+                                        sonde_data = {}
+                                        # sonde_data["id"] = spot_call + "-12"
+                                        sonde_data["id"] = balloon_name + "-12"
+                                        sonde_data["lat"] = telemetry['lat']
+                                        sonde_data["lon"] = telemetry['lon']
+                                        sonde_data["speed"] = telemetry['speed']
+                                        sonde_data["alt"] = telemetry['alt']
+                                        sonde_data["gps"] = telemetry['gps']
+                                        sonde_data["sats"] = telemetry['sats']
+                                        sonde_data["temp"] = telemetry['temp']
+                                        print("Pushing data to aprs.fi")
+                                        push_balloon_to_aprs(sonde_data)
+
+                                    # Add sent string to history-db
+                                    addsentdb(balloon_name, row[0], telestr)
+                                    
+                                    # Add datas to flightpath-db for showing the track in maps
+                                    addflightpathdb(balloon_name, row[0], telemetry['lat'], telemetry['lon'], telemetry['alt'], telemetry['speed'])
+                                    
+                                    # Push balloon to html
+                                    if release != None:
+                                        if push_html == 'True':
+                                            print("Pushing data to HTML")
+                                            push_balloon_to_html(balloon_name, telemetry)
+                                    
+                                else:
+                                    print("Already sent spot. Doing nothing")
 
     return spots
 
 
 
-        
+# balloons = readballoonsdb()
+# spots = readgz(balloons, "wsprspots-2018-06.csv.gz")
+# spots.sort(reverse=True)
+#spots = readgz(balloons, "wsprspots-2018-05.csv.gz")
+# sys.exit(0)
+#dumpcsv(spots)
+# sys.exit(0)
+
+# spots.sort(reverse=True)
+
+# spots = readcsv()
+
+# spots = spots + readnewspotsdb()
+
+# Trim of spots older than x days
+# spots = timetrim(spots, 2)
+
+
+
+#while True:
+#    process_telemetry(spots, balloons,habhub_callsign, push_habhub, push_apr)s
+
+#    print("Outer loop")
