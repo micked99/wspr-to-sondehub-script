@@ -107,7 +107,7 @@ To use this pythonscript on windows I use Anaconda Python which you can download
 
 https://www.anaconda.com/download/success
 
-After install, in Anaconda Navigator go to Base (Root) Terminal like in this picture and do the install of the libs
+After install, in Anaconda Navigator go to base (root) Terminal like in this picture and do the install of the libs
 
 pip install httplib2
 
