@@ -1,8 +1,7 @@
 # hab-wspr
-Following is the original readme with basic setup info, my notes starts below in the section that starts with: #DG4NOB upgrade
+Following is the original readme with basic setup info, my notes starts below in the section that starts with: DG4NOB upgrade
 
-
-## High altittude ballon tracking via WSPR
+## High altittude ballon tracking via WS
 
 The software webscrapes data from wsprnet.org, filter out calls from the balloons and decode additional telemetry. Currently the script supports upload to:
 
