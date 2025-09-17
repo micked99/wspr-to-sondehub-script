@@ -103,6 +103,17 @@ python3 webscrape.py --csv spots.csv
 
 ## DG4NOB upgrade
 
+To use this pythonscript on windows I use Anaconda Python which you can download here
+
+https://www.anaconda.com/download/success
+
+After install in Anaconda Navigator go to Root  Terminal like in this picture and do the install of the libs above
+pip install httplib2
+pip install bs4
+
+
+
+
 
 
 
