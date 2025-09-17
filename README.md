@@ -1,4 +1,6 @@
 # hab-wspr
+DFollowing is the original readme with basic setup info, my notes starts below in the section that starts with: DG4NOB upgrade
+
 
 ## High altittude ballon tracking via WSPR
 
@@ -100,6 +102,7 @@ Read csv-file from spots.csv and process.
 python3 webscrape.py --csv spots.csv
 </pre>
 
+## DG4NOB upgrade
 
 
 
