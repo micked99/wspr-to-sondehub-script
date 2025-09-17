@@ -111,6 +111,7 @@ After install in Anaconda Navigator go to Root  Terminal like in this picture an
 pip install httplib2
 pip install bs4
 
+<img width="1600" height="900" alt="Anaconda Terminal " src="https://github.com/user-attachments/assets/0cc793fb-1040-49a2-80c4-0f82f18e095c" />
 
 
 
