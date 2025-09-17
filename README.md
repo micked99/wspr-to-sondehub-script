@@ -107,8 +107,10 @@ To use this pythonscript on windows I use Anaconda Python which you can download
 
 https://www.anaconda.com/download/success
 
-After install in Anaconda Navigator go to Root  Terminal like in this picture and do the install of the libs above
+After install, in Anaconda Navigator go to Root Terminal like in this picture and do the install of the libs
+
 pip install httplib2
+
 pip install bs4
 
 <img width="1600" height="900" alt="Anaconda Terminal " src="https://github.com/user-attachments/assets/0cc793fb-1040-49a2-80c4-0f82f18e095c" />
