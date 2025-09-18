@@ -115,8 +115,8 @@ pip install bs4
 
 <img width="1600" height="900" alt="Anaconda Terminal " src="https://github.com/user-attachments/assets/0cc793fb-1040-49a2-80c4-0f82f18e095c" />
 
-Then instead of runing the full Anaconda you can just call the core component with a small .bat filet containing the following lines, edit to your preference <br>
-the file is in the above files as scrape.bat <br>
+Then instead of runing the full Anaconda you can just call the core component with a small .bat filet containing the following lines, edit to your preference, 
+the file is above as scrape.bat <br>
 call C:\Users\i3\anaconda3\Scripts\activate C:\Users\i3\Anaconda3 <br>
 cd C:\Users\i3\Dropbox\Hab Wspr upload-10m\webscraper <br>
 call C:\Users\i3\anaconda3/python.exe "webscrape.py" <br>
