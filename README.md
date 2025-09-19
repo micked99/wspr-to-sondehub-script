@@ -1,5 +1,7 @@
 # hab-wspr
-Following is the original readme with basic setup info, my notes starts below in the section that starts with: DG4NOB upgrade
+Following is the original readme with basic setup info, my notes starts below in the section that starts with: DG4NOB upgrade.
+
+Original source here https://github.com/sm3ulc/hab-wspr
 
 ## High altittude ballon tracking via WS
 
