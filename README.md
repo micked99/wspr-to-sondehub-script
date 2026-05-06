@@ -130,17 +130,19 @@ PAUSE <br><br>
 
 With the help of Ai and Eduard/YO3ICT I managed to fix a couple of bugs and improve the script even a bit further.
 
-Bugfixes: The wspr db we scrape the data from have evolved over time and it had from the begining a 12 rows of data but does at the moment have 14 rows, the script throwed a complaint though it worked fine, just a heads up - its now been fixed, tnx Eduard for figuring this part out.
+Bugfixes: The wspr db we scrape the data from have evolved over time and it had from the begining a 12 rows of data but does at the moment have 14 rows, the script throwed a complaint though it worked fine, just a heads up - its now been fixed, tnx Eduard for figuring this part out.<br>
 
 The daycount in the html uploader was set to a fixed 30 day month, it did not count Feb as 28 or take leap years in account etc, its now been fixed and use a library to handle this, this lib is already in most distros but you might need to: pip install python-dateutil, 
-Now your duration will correctly show things like:
-1mo 2d instead of 1mo 0d (when crossing real month boundaries)
-February handled correctly (28/29 days)
-No long-term drift
+Now your duration will correctly show things like:<br>
+1mo 2d instead of 1mo 0d (when crossing real month boundaries)<br>
+February handled correctly (28/29 days)<br>
+No long-term drift<br>
 
 Added features.
 
-You can now set a frequency span in balloon.ini which you can filter out that just balloon data within a specific and narrow freq span gets through and decoded, important as the balloon in air at the same time have skyrocked over the last years, there can be up to 4 balloons using the same "channel" only divided by frequency.
+You can set a frequency span in balloon.ini which you can filter out that just balloon data within a specific and narrow freq span gets through and decoded, important as the balloon in air at the same time have skyrocked over the last years, there can be up to 4 balloons using the same "channel" only divided by frequency.<br>
+
+The html map now autoamaticly change colour every time it crosses over release longitude, making it easier to keep trak of the laps.<br>
 
 
 
