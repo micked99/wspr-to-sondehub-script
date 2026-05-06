@@ -115,6 +115,8 @@ pip install httplib2
 
 pip install bs4
 
+pip install python-dateutil
+
 <img width="1600" height="900" alt="Anaconda Terminal " src="https://github.com/user-attachments/assets/0cc793fb-1040-49a2-80c4-0f82f18e095c" />
 
 Then instead of runing the full Anaconda you can just call the core component with a small .bat filet containing the following lines, edit to your preference, 
@@ -123,6 +125,15 @@ call C:\Users\i3\anaconda3\Scripts\activate C:\Users\i3\Anaconda3 <br>
 cd C:\Users\i3\Dropbox\Hab Wspr upload-10m\webscraper <br>
 call C:\Users\i3\anaconda3/python.exe "webscrape.py" <br>
 PAUSE <br><br>
+
+## AI bugfix and upgrade
+
+With the help of Ai and Eduard/YO3ICT I managed to fix a couple of bugs and improve the script even a bit further.
+
+# Bugfixes: The wspr db we scrape the data from have evolved over time and it had from the begining a 12 rows of data but does at the moment have 14 rows, the script throwed a complaint though it worked fine, just a heads up - its now been fixed, tnx Eduard for figuring this part out.
+
+# The daycount in the html upload was set at a fixed 30 day month, it did not count Feb as 28 or take leap years in account etc, its now been fixed and use a library to handle this, its in most distros but you might need to: pip install python-dateutil
+
 
 
 
