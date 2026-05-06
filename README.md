@@ -128,7 +128,7 @@ PAUSE <br><br>
 
 ## AI bugfix and upgrade
 
-With the help of Ai and Eduard/YO3ICT I managed to fix a couple of bugs and improve the script even a bit further.
+With the help of Ai and Eduard/YO3ICT I managed to fix a couple of bugs and improve the script a bit.
 
 Bugfixes:<br>
 
