@@ -130,7 +130,9 @@ PAUSE <br><br>
 
 With the help of Ai and Eduard/YO3ICT I managed to fix a couple of bugs and improve the script even a bit further.
 
-Bugfixes: The wspr db we scrape the data from have evolved over time and had from the begining 12 rows of data but does at the moment have 14 rows, the script throwed a complaint about this, though it worked fine - its now been fixed, tnx Eduard for figuring this part out.<br>
+Bugfixes:<br>
+
+The wspr db we scrape the data from have evolved over time and had from the begining 12 rows of data but does at the moment have 14 rows, the script throwed a complaint about this, though it worked fine - its now been fixed, tnx Eduard for figuring this part out.<br>
 
 The daycount in the html uploader was set to a fixed 30 day month, it did not count Feb as 28 or take leap years in account etc, its now been fixed and use a library to handle this, this lib is already in most distros but you might need to: pip install python-dateutil, 
 Now your duration will correctly show things like:<br>
