@@ -103,6 +103,13 @@ Read csv-file from spots.csv and process.
 python3 webscrape.py --csv spots.csv
 </pre>
 
+## Edit those lines to fit your setup<br>
+
+Line 43 & 153 in webscrape.py to set what hf-band you are using<br>
+
+In the html file, insert you google map key in line 16, edit Line 7, then search for "var baseLng =" and "var contentString =" and edit to your liking<br>
+
+
 ## DG4NOB upgrade
 
 To use this pythonscript on windows I use Anaconda Python which you can download here
