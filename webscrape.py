@@ -21,6 +21,10 @@ push_aprs = config['main']['push_aprs']
 balloons = config['main']['balloons']
 filter_only_spots_newer = config['main']['filter_only_spots_newer']
 
+freq_min = float(config['main'].get('freq_min', 0))
+freq_max = float(config['main'].get('freq_max', 999))
+
+
 balloons = json.loads(config.get('main','balloons'))
 
 db_counter = 0
@@ -35,7 +39,7 @@ for b in balloons:
 def getspots (nrspots):
 #    print("Fetching...")
 #    wiki = "http://wsprnet.org/olddb?mode=html&band=all&limit=" + str(nrspots) + "&findcall=&findreporter=&sort=spotnum"
-    wiki = "https://wsprnet.org/olddb?mode=html&band=10&limit=" + str(nrspots) + "&findcall=&findreporter=&sort=spotnum"
+    wiki = "https://www.wsprnet.org/olddb?mode=html&band=17&limit=" + str(nrspots) + "&findcall=&findreporter=&sort=spotnum"
     try:
         page = requests.get(wiki)
     except requests.exceptions.RequestException as e:
@@ -53,7 +57,7 @@ def getspots (nrspots):
         table = soup.find_all('table')[2]
         # print("TABLE:",table)
 
-        rows = table.findAll('tr')
+        rows = table.find_all('tr')
         for row in rows:
             cols = row.find_all('td')
             cols = [ele.text.strip() for ele in cols]
@@ -65,20 +69,32 @@ def getspots (nrspots):
     # Strip empty rows
     newspots = [ele for ele in data if ele] 
 
-    # Strip redundant columns Watt & miles and translate/filter data
+    # Strip redundant columns Watt, miles, mode, version and translate/filter data
     for row in newspots:
         row[0] = datetime.datetime.strptime(row[0], '%Y-%m-%d %H:%M')
         row[6] = int(row[6].replace('+',''))
-
-        del row[10]
-       # del row[11]
-        del row[7]
         
+        if (len(row)==14):
+            del row [13]
+        
+        del row[12]
+        del row[11]
+        del row[7]
 
     # Reverse the sorting order of time to get new spots firsts
     newspots.reverse()
 
-    return newspots
+    # Apply frequency filter from config
+    filtered = []
+    for row in newspots:
+        try:
+            freq = float(row[2])
+            if freq_min <= round(freq,6) <= freq_max:
+                filtered.append(row)
+        except:
+            continue
+
+    return filtered
 
 
 # 
@@ -92,6 +108,7 @@ def dumpnewdb(spotlist):
     try:
         con = sqlite3.connect('wsprdb.db')
         cur = con.cursor()
+      # cur.execute('create table if not exists newspots(timestamp varchar(20), tx_call varchar(10), freq real, snr integer, drift integer, tx_loc varchar(6), power integer, rx_call varchar(10), rx_loc varchar(6), distance integer, mode varchar(10), version varchar(10))')
         cur.execute('create table if not exists newspots(timestamp varchar(20), tx_call varchar(10), freq real, snr integer, drift integer, tx_loc varchar(6), power integer, rx_call varchar(10), rx_loc varchar(6), distance integer)')
         for row in spotlist:
             cur.execute("INSERT INTO newspots VALUES(?,?,?,?,?,?,?,?,?,?)", (row))
@@ -125,11 +142,12 @@ def balloonfilter(spots,balloons):
                 else:
                     row[5] = row[5][0:4]
                     filtered.append(row)
-
-        if re.match('(^1|^0|^Q).[0-9].*', row[1]):
+                    
+       #if re.match('(^1|^0|^Q).[0-9].*', row[1]):
+        if re.match('(^0|^Q).[0-9].*', row[1]):
             
             # Coarse bogus filter - just save 30m and 20m
-            if re.match('10\..*', row[2]) or re.match('28\..*', row[2]):
+            if re.match('18.*', row[2]):
                 #               print("Found", row)
                 filtered.append(row)
 
@@ -167,12 +185,12 @@ spots = []
 # balloons = readballoonsdb()
 
 # Spots to pull from wsprnet
-nrspots_pull= 3000
+nrspots_pull= 2000
 spotcache = []
 
 print("Preloading cache from wsprnet...")
 #spotcache = getspots(10000)
-spotcache = getspots(5000)
+spotcache = getspots(3000)
 print("Fspots1",len(spotcache))
 spotcache = balloonfilter(spotcache ,balloons)
 print("Fspots2",len(spotcache))
@@ -291,11 +309,3 @@ while 1==1:
     sleeping = sleeptime - int(datetime.datetime.now().strftime('%S')) % sleeptime
 #    print("Sleep:", sleeping)
     time.sleep(sleeping)
-
-
-
-
-
-
-
-        

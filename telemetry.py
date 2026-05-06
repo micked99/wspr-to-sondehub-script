@@ -140,7 +140,7 @@ def readgz(balloons, gzfile):
 #                        print("Found", c, row)
                         spots.append(row)
 
-            if re.match('(^0|^Q).[0-9].*', row[1]):
+            if re.match('(^1|^0|^Q).[0-9].*', row[1]):
                 row[0] = datetime.datetime.fromtimestamp(int(row[0]))
  #               print("Found", row)
                 spots.append(row)
@@ -238,14 +238,33 @@ def decode_telemetry(spot_pos, spot_tele):
     if  alt > 16500:
  #       print("Bogus packet. Too high altitude!! locking to 9999")
         alt=9999
-        
-    if alt == 2760:
- #       print("Bogus packet. 2760 m  locking to 9998")
-        alt=9998
-
-    if alt == 0:
-#        print("Zero alt detected. Locking to 20")
-        alt=20
+    if alt == 0: alt=12345
+    if alt == 160: alt=12345
+    if alt == 180: alt=12345
+    if alt == 380: alt=12345
+    if alt == 400: alt=12345
+    if alt == 440: alt=12345
+    if alt == 460: alt=12345
+    if alt == 480: alt=12345
+    if alt == 500: alt=12345
+    if alt == 520: alt=12345
+    if alt == 540: alt=12345
+    if alt == 560: alt=12345
+    if alt == 580: alt=12345
+    if alt == 600: alt=12345
+    if alt == 620: alt=12345
+    if alt == 900: alt=12345
+    if alt == 940: alt=12345
+    if alt == 960: alt=12345
+    if alt == 980: alt=12345
+    if alt == 1000: alt=12345
+    if alt == 1020: alt=12345
+    if alt == 1240: alt=12345
+    if alt == 1380: alt=12345
+    if alt == 2760: alt=12345
+    if alt == 2920: alt=12345
+    if alt == 4960: alt=12345
+    if alt == 5700: alt=12345
 
     # Sublocator
     lsub1=lsub1+65
@@ -285,8 +304,8 @@ def decode_telemetry(spot_pos, spot_tele):
     t4=int(t3/4)
     speed=t4*2
     r7=t3-t4*4
-    gps=r7/2
-    sats=r7%2
+    gps=r7/2  #gps=1 
+    sats=r7%2 #sats=1 
 
     # print("T1-4,R7:",t1, t2, t3, t4, r7)
 
@@ -545,7 +564,7 @@ def process_telemetry(spots, balloons, habhub_callsign, push_habhub, push_sondeh
         # print(row)
         if re.match('(^0|^Q).[0-9].*', row[1]):
             #         print(', '.join(row))
-            if re.match('10\..*', row[2]) or re.match('28\..*', row[2]):
+            if re.match('18.*', row[2]):
                 spot_minute = row[0].minute % 10
                 spots_tele.append(row)
 
@@ -755,8 +774,8 @@ def process_telemetry(spots, balloons, habhub_callsign, push_habhub, push_sondeh
                                     temp_upload = float(temp_upload)
                                     vel_h_upload = '%.0f' % (telemetry['speed'])
                                     vel_h_upload = float(vel_h_upload)
-                                    sats_upload = '%d' % (telemetry['sats'])
-                                    sats_upload = int(sats_upload)
+                                   # sats_upload = '%d' % (telemetry['sats'])
+                                   # sats_upload = int(sats_upload)
                                     batt_upload = '%.2f' % (telemetry['batt'])
                                     batt_upload = float(batt_upload)
                                     tx_frequency_upload = '%.6f' % (frequency_sondehub)
@@ -765,8 +784,8 @@ def process_telemetry(spots, balloons, habhub_callsign, push_habhub, push_sondeh
                                     if comment != None:
                                         telestr_sondehub = [
                                           {
-                                            "software_name": "%s" % ("DG4NOB_WSPR_UPLOADER"),
-                                            "software_version": "%s" % ("0.1"),
+                                            "software_name": "%s" % ("SM0ULC_WSPR_UPLOADER"),
+                                            "software_version": "%s" % ("1.1"),
                                             "uploader_callsign": "%s" % (habhub_callsign),
 #                                            "time_received": "%s" % (date_created_sondehub),
                                             "time_received": "%s" % (date_now_sondehub),
@@ -779,9 +798,10 @@ def process_telemetry(spots, balloons, habhub_callsign, push_habhub, push_sondeh
 #                                            "upload_time": "%s" % (date_now_sondehub),
                                             "temp": temp_upload,
 #                                            "vel_h": vel_h_upload,
-                                            "sats": sats_upload,
+                                           # "sats": sats_upload,
                                             "batt": batt_upload,
-                                            "modulation": "WSPR",
+                                            "modulation": "WSPR (SA6BSS)",
+                                            "type": "ICT",
                                             "tx_frequency": tx_frequency_upload,
                                             "comment": comment
                                           }
@@ -789,8 +809,8 @@ def process_telemetry(spots, balloons, habhub_callsign, push_habhub, push_sondeh
                                     else:
                                         telestr_sondehub = [
                                           {
-                                            "software_name": "%s" % ("DG4NOB_WSPR_UPLOADER"),
-                                            "software_version": "%s" % ("0.1"),
+                                            "software_name": "%s" % ("SM0ULC_WSPR_UPLOADER"),
+                                            "software_version": "%s" % ("1.1"),
                                             "uploader_callsign": "%s" % (habhub_callsign),
 #                                            "time_received": "%s" % (date_created_sondehub),
                                             "time_received": "%s" % (date_now_sondehub),
@@ -803,9 +823,10 @@ def process_telemetry(spots, balloons, habhub_callsign, push_habhub, push_sondeh
 #                                            "upload_time": "%s" % (date_now_sondehub),
                                             "temp": temp_upload,
 #                                            "vel_h": vel_h_upload,
-                                            "sats": sats_upload,
+                                          #  "sats": sats_upload,
                                             "batt": batt_upload,
-                                            "modulation": "WSPR",
+                                            "modulation": "WSPR (SA6BSS)",
+                                            "type": "ICT",
                                             "tx_frequency": tx_frequency_upload,
                                           }
                                         ]

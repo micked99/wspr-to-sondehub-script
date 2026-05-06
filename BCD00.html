@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+    <meta charset="utf-8">
+	<meta http-equiv="refresh" content="120">
+    <title>BSS52 Balloon by BSS</title>
+    <style>
+      html, body, #map-canvas {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+      }
+
+    </style>
+    <script src="https://maps.googleapis.com/maps/api/js?key=insert google map key here"></script>
+	<script src="js/nite-overlay.js"></script>
+
+<script>
+
+var colors = [
+ '#800000', '#9A6324', '#808000', '#469990', '#000075', '#e6194B', '#f58231', '#ffe119', '#bfef45', '#3cb44b', '#4363d8', '#f032e6', '#911eb4', '#fabed4'
+];
+
+var rad = function(x) {
+    return x * 3.14159 / 180;
+  };
+
+google.maps.LatLng.prototype.distance = function(other) {
+  var R = 6371000; // Earth mean radius in meter 6378137
+  var dLat = rad(other.lat() - this.lat());
+  var dLong = rad(other.lng() - this.lng());
+  var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(rad(this.lat())) * Math.cos(rad(other.lat())) *
+    Math.sin(dLong / 2) * Math.sin(dLong / 2);
+  var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  var d = R * c;
+  return d; // returns the distance in meter
+};
+
+function initialize() {
+  var mapOptions = {
+    zoom: 3,
+    center: new google.maps.LatLng(60, 24),
+    mapTypeId: google.maps.MapTypeId.TERRAIN,
+	scaleControl: true,
+    streetViewControl: false,
+    mapTypeControl: false
+  };
+
+
+  var map = new google.maps.Map(document.getElementById('map-canvas'),
+      mapOptions);
+	  
+	nite.init(map);
+	setInterval(function() { nite.refresh() }, 600000);
+	
+  var flightPlanCoordinates = [
+
+// #POSITION#
+	 ];
+
+var baseLng = 13.5175;
+var colorIndex = 0;
+
+// Handle longitude wrap properly
+function crossedBase(prevLng, currLng, baseLng) {
+  var p = (prevLng + 360) % 360;
+  var c = (currLng + 360) % 360;
+  var b = (baseLng + 360) % 360;
+
+  return (p <= b && c > b);
+}
+
+var segment = [flightPlanCoordinates[0]];
+
+for (var i = 1; i < flightPlanCoordinates.length; i++) {
+  var prev = flightPlanCoordinates[i - 1];
+  var curr = flightPlanCoordinates[i];
+
+  if (crossedBase(prev.lng(), curr.lng(), baseLng)) {
+
+    // Draw current segment
+    new google.maps.Polyline({
+      path: segment,
+      geodesic: true,
+      strokeColor: colors[colorIndex],
+      strokeOpacity: 2,
+      strokeWeight: 4,
+      map: map
+    });
+
+    // Next color (loop 0–9)
+    colorIndex = (colorIndex + 1) % colors.length;
+
+    segment = [prev];
+  }
+
+  segment.push(curr);
+}
+
+// Draw last segment
+new google.maps.Polyline({
+  path: segment,
+  geodesic: true,
+  strokeColor: colors[colorIndex],
+  strokeOpacity: 1,
+  strokeWeight: 3,
+  map: map
+});
+
+  var distance = 0;
+
+  var flightPathValues = eval('flightPlanCoordinates');
+  for(var i = 0; i < flightPathValues.length; i++)
+  {
+    if(i !== flightPathValues.length - 1) {
+      distance += flightPathValues[i].distance(flightPathValues[i+1]);
+    }
+  }
+
+  distance = Math.round(distance/1000);
+
+   var balloonMarker = new google.maps.Marker({
+    position: flightPlanCoordinates[flightPlanCoordinates.length - 1],
+    icon: {url:"ico/icon.png" ,labelOrigin: new google.maps.Point(32, -5)},
+    map: map,
+    animation: google.maps.Animation.DROP,
+    });
+		
+	var contentString = '<b><center>BSS52</center></b><br>Yellow line = 15° solar'+
+'<p>Updated 2026-05-06 0837Z<br />Locator = OO57OS<br />Duration = 6mo 17d 21h 32m<br />Distance = '+ distance +'km<br />Altitude = 12620m<br />Speed = 16kt 30km/h<br />Solar = 3.54V, Temp = 8.7C, <br />GPS = 1, Sats = 1</p>'; 
+
+	var infowindow = new google.maps.InfoWindow({
+		content: contentString,
+		pixelOffset: new google.maps.Size(0, -20)
+	});
+
+	infowindow.open(map, balloonMarker);
+	
+	balloonMarker.addListener('click', function() {
+          infowindow.open(map, balloonMarker);
+        });
+	  
+	var latLng = balloonMarker.getPosition();
+	map.setCenter(latLng);	
+}
+
+google.maps.event.addDomListener(window, 'load', initialize);
+
+    </script>
+  </head>
+  <body>
+<div style="position: absolute; left: 0px; bottom:25px; z-index: 2; width: 100px; height: 27px;"><img alt="" src="ico/badge.png" draggable="false" style="user-select: none; border: 0px; padding: 0px; margin: 0px; width: 100px; height: 27px; position: absolute;"></div>
+    <div id="map-canvas"></div>
+  </body>
+</html>
