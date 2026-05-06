@@ -140,9 +140,13 @@ No long-term drift<br>
 
 Added features.
 
-You can set a frequency span in balloon.ini which you can filter out that just balloon data within a specific and narrow freq span gets through and decoded, important as the balloon in air at the same time have skyrocked over the last years, there can be up to 4 balloons using the same "channel" only divided by frequency.<br>
+You can set a frequency span in balloon.ini which you can filter out and make sure that just balloon data within a specific and narrow freq span gets through and decoded, important as the balloon in air at the same time have skyrocked over the last years, there can be up to 4 balloons using the same "channel" only divided by frequency.<br>
 
-The html map now autoamaticly change colour every time it crosses over release longitude, making it easier to keep trak of the laps.<br>
+The html map now automaticly change colour every time it crosses over release longitude, making it easier to keep track of the laps.<br>
+
+A degree of gps jaming detection, when flying over warzones where there is ongoing jaming the balloons can usually pick up the incorrectly tx gps signal and this mostly results in a fixed "jaming altitude" I have detected about 20 altitudes used, when any of this altitudes is detected this will show on the map as a fixed alt of 12345 meter
+
+
 
 
 
