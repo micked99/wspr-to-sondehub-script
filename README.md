@@ -107,8 +107,10 @@ python3 webscrape.py --csv spots.csv
 
 Line 43 & 153 in webscrape.py to set what hf-band you are using<br>
 
-In the html file, insert you google map key in line 16, edit Line 7, then search for "var baseLng =" and "var contentString =" and edit to your liking<br>
+In the html file, insert you google map key in line 16, edit Line 7, then search for "var baseLng =" and <br>
+"var contentString =" and edit to your liking<br>
 
+Im using www.qsl.net :s ftp to upload and view my own map<br>
 
 ## DG4NOB upgrade
 
