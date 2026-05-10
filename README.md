@@ -114,11 +114,15 @@ Im using www.qsl.net :s ftp to upload and view my own map<br>
 
 ## DG4NOB upgrade
 
+Aded some filtering which makes it possible to set a fixed voltage within the tracker code to only let the "correct" voltage throuh - see balloon.ini
+
+## Anaconda Python
+
 To use this pythonscript on windows I use Anaconda Python which you can download here
 
 https://www.anaconda.com/download/success
 
-After install, in Anaconda Navigator open a Terminal window, go to base (root) Terminal like in this picture and do the install of the libs
+After install, in Anaconda Navigator open a Terminal window - see pic, go to base (root) Terminal like in this picture and do the install of the libs
 
 pip install httplib2
 
@@ -128,8 +132,8 @@ pip install python-dateutil
 
 <img width="1600" height="900" alt="Anaconda Terminal " src="https://github.com/user-attachments/assets/0cc793fb-1040-49a2-80c4-0f82f18e095c" />
 
-Then instead of runing the full Anaconda you can just call the core component with a small .bat filet containing the following lines, edit to your preference, 
-the file is above as scrape.bat <br><br>
+Then instead of runing the full Anaconda you can just call the core component of Anaconda with a small .bat filet containing the following lines, 
+edit to your preference, a scrape.bat file is distributed with this rep. <br><br>
 call C:\Users\i3\anaconda3\Scripts\activate C:\Users\i3\Anaconda3 <br>
 cd C:\Users\i3\Dropbox\Hab Wspr upload-10m\webscraper <br>
 call C:\Users\i3\anaconda3/python.exe "webscrape.py" <br>
