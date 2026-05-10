@@ -1,5 +1,5 @@
 # hab-wspr
-Following is the original readme with basic setup info, my notes starts below in the section that starts with: DG4NOB upgrade.
+Following is the original readme with basic setup info, my notes starts below in the section that starts with: DG4NOB upgrade, misc bugfixes and upgrades described at the end  of this page
 
 Original source here https://github.com/sm3ulc/hab-wspr
 
