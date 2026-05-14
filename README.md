@@ -139,7 +139,7 @@ cd C:\Users\i3\Dropbox\Hab Wspr upload-10m\webscraper <br>
 call C:\Users\i3\anaconda3/python.exe "webscrape.py" <br>
 PAUSE <br><br>
 
-## AI bugfix and upgrade
+## Bugfix and AI upgrade
 
 With the help of Ai and Eduard/YO3ICT I managed to fix a couple of bugs and improve the script a bit.
 
