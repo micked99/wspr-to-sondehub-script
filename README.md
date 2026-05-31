@@ -105,7 +105,7 @@ python3 webscrape.py --csv spots.csv
 
 ## Edit those lines to fit your setup<br>
 
-Line 42 & 170 in webscrape.py to set what hf-band you are using<br>
+Line 42 & 170 in webscrape.py and line 602 in telemetry.py to set what hf-band you are using in Mhz<br>
 
 In the html file, insert you google map key in line 16, edit Line 7, then search for "var baseLng =" and <br>
 "var contentString =" and edit to your liking<br>
