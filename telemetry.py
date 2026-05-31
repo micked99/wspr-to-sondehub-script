@@ -400,6 +400,41 @@ def addflightpathdb(name, time_rec, tel_lat, tel_lon, tel_alt, tel_speed):
     return
 
 
+def position_is_sane(balloon_name, new_time, new_lat, new_lon):
+    """Reject positions that jump more than 1 degree within 10 minutes."""
+    import sqlite3 as _sq
+    import datetime as _dt
+    con = None
+    try:
+        con = _sq.connect("flightpath.db")
+        cur = con.cursor()
+        cur.execute(
+            "SELECT time_received, lat, lon FROM sentspots WHERE name=? ORDER BY time_sent DESC LIMIT 1",
+            (balloon_name,)
+        )
+        row = cur.fetchone()
+        if row is None:
+            return True
+        last_lat = float(row[1])
+        last_lon = float(row[2])
+        try:
+            last_time = _dt.datetime.strptime(row[0], "%Y-%m-%d %H:%M:%S.%f")
+        except ValueError:
+            last_time = _dt.datetime.strptime(row[0], "%Y-%m-%d %H:%M:%S")
+        dt_minutes = (new_time - last_time).total_seconds() / 60.0
+        if dt_minutes <= 10:
+            if abs(new_lat - last_lat) > 1.0 or abs(new_lon - last_lon) > 1.0:
+                print("!!! SANITY FAIL: %.4f,%.4f -> %.4f,%.4f in %.1f min - DROPPING" %
+                      (last_lat, last_lon, new_lat, new_lon, dt_minutes))
+                return False
+        return True
+    except Exception as e:
+        print("position_is_sane error: %s" % e)
+        return True
+    finally:
+        if con:
+            con.close()
+
 import logging
 from pprint import pformat
 
@@ -564,7 +599,7 @@ def process_telemetry(spots, balloons, habhub_callsign, push_habhub, push_sondeh
         # print(row)
         if re.match('(^0|^Q).[0-9].*', row[1]):
             #         print(', '.join(row))
-            if re.match('18.*', row[2]):
+            if re.match('21.*', row[2]):
                 spot_minute = row[0].minute % 10
                 spots_tele.append(row)
 
@@ -876,7 +911,8 @@ def process_telemetry(spots, balloons, habhub_callsign, push_habhub, push_sondeh
                                     addsentdb(balloon_name, row[0], telestr)
                                     
                                     # Add datas to flightpath-db for showing the track in maps
-                                    addflightpathdb(balloon_name, row[0], telemetry['lat'], telemetry['lon'], telemetry['alt'], telemetry['speed'])
+                                    if position_is_sane(balloon_name, telemetry['time'], telemetry['lat'], telemetry['lon']):
+                                        addflightpathdb(balloon_name, row[0], telemetry['lat'], telemetry['lon'], telemetry['alt'], telemetry['speed'])
                                     
                                     # Push balloon to html
                                     if release != None:
