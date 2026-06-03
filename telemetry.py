@@ -261,6 +261,7 @@ def decode_telemetry(spot_pos, spot_tele):
     if alt == 1020: alt=12345
     if alt == 1240: alt=12345
     if alt == 1380: alt=12345
+    if alt == 2040: alt=12345
     if alt == 2760: alt=12345
     if alt == 2920: alt=12345
     if alt == 4960: alt=12345
@@ -422,6 +423,11 @@ def position_is_sane(balloon_name, new_time, new_lat, new_lon):
         except ValueError:
             last_time = _dt.datetime.strptime(row[0], "%Y-%m-%d %H:%M:%S")
         dt_minutes = (new_time - last_time).total_seconds() / 60.0
+
+        if dt_minutes < 0:
+            print("Older position than latest stored")
+            return False
+
         if dt_minutes <= 10:
             if abs(new_lat - last_lat) > 1.0 or abs(new_lon - last_lon) > 1.0:
                 print("!!! SANITY FAIL: %.4f,%.4f -> %.4f,%.4f in %.1f min - DROPPING" %
@@ -599,7 +605,7 @@ def process_telemetry(spots, balloons, habhub_callsign, push_habhub, push_sondeh
         # print(row)
         if re.match('(^0|^Q).[0-9].*', row[1]):
             #         print(', '.join(row))
-            if re.match('21.*', row[2]):
+            if re.match('18.*', row[2]):
                 spot_minute = row[0].minute % 10
                 spots_tele.append(row)
 
@@ -879,6 +885,16 @@ def process_telemetry(spots, balloons, habhub_callsign, push_habhub, push_sondeh
 
                                 # Check if string has been uploaded before and if not then add and upload
                                 if not checkifsentdb(telestr):
+
+                                    # Reject impossible jumps BEFORE uploading anywhere
+                                    if not position_is_sane(
+                                            balloon_name,
+                                            telemetry['time'],
+                                            telemetry['lat'],
+                                            telemetry['lon']):
+                                        print("SANITY FILTER REJECTED POSITION - NOT UPLOADING")
+                                        continue
+
                                 #if telemetry['batt'] > 4.55 or telemetry['batt'] < 4.62:   #new Kevin battery filter
 #                                     print("Unsent spot", telestr)
                                     if push_habhub == 'True':
@@ -911,8 +927,7 @@ def process_telemetry(spots, balloons, habhub_callsign, push_habhub, push_sondeh
                                     addsentdb(balloon_name, row[0], telestr)
                                     
                                     # Add datas to flightpath-db for showing the track in maps
-                                    if position_is_sane(balloon_name, telemetry['time'], telemetry['lat'], telemetry['lon']):
-                                        addflightpathdb(balloon_name, row[0], telemetry['lat'], telemetry['lon'], telemetry['alt'], telemetry['speed'])
+                                    addflightpathdb(balloon_name, row[0], telemetry['lat'], telemetry['lon'], telemetry['alt'], telemetry['speed'])
                                     
                                     # Push balloon to html
                                     if release != None:
