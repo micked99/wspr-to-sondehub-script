@@ -155,7 +155,7 @@ No long-term drift<br>
 
 Added features.<br>
 
-You can set a frequency span in balloon.ini which you can filter out and make sure that just balloon data within a specific and narrow freq span gets through and decoded, important as the balloon in air at the same time have skyrocked over the last years, there can be up to 4 balloons using the same "channel" only divided by frequency.<br>
+You can set a frequency span in balloon.ini which you can filter out and make sure that just balloon data within a specific and narrow freq span in wspr bandpass gets through and decoded, this is important as the balloons in air at the same time have skyrocked over the last years, there can be up to 4 balloons using the same "channel" only divided by frequency.<br>
 
 The html map now automaticly change colour every time it crosses over release longitude, making it easier to keep track of the laps.<br>
 
