@@ -103,6 +103,8 @@ Read csv-file from spots.csv and process.
 python3 webscrape.py --csv spots.csv
 </pre>
 
+/////////////////// End of original readme /////////////////////<br><br>
+
 ## Edit those lines to fit your setup<br>
 
 Line 42 & 170 in webscrape.py and line 602 in telemetry.py to set what hf-band you are using in Mhz<br>
@@ -111,10 +113,6 @@ In the html file, insert you google map key in line 16, edit Line 7, then search
 "var contentString =" and edit to your liking<br>
 
 Im using www.qsl.net :s ftp to upload and view my own map<br>
-
-## DG4NOB upgrade
-
-Aded some filtering which makes it possible to set a fixed voltage within the tracker code to only let the "correct" voltage throuh - see balloon.ini
 
 ## Anaconda Python
 
@@ -138,6 +136,10 @@ call C:\Users\i3\anaconda3\Scripts\activate C:\Users\i3\Anaconda3 <br>
 cd C:\Users\i3\Dropbox\Hab Wspr upload-10m\webscraper <br>
 call C:\Users\i3\anaconda3/python.exe "webscrape.py" <br>
 PAUSE <br><br>
+
+## DG4NOB upgrade
+
+Aded some filtering which makes it possible to set a fixed voltage within the tracker code to only let the "correct" voltage throuh - see balloon.ini
 
 ## Bugfix and AI upgrade
 
