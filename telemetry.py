@@ -402,41 +402,78 @@ def addflightpathdb(name, time_rec, tel_lat, tel_lon, tel_alt, tel_speed):
 
 
 def position_is_sane(balloon_name, new_time, new_lat, new_lon):
-    """Reject positions that jump more than 1 degree within 10 minutes."""
+    """Reject impossible jumps while allowing dateline crossings."""
     import sqlite3 as _sq
     import datetime as _dt
+
     con = None
     try:
         con = _sq.connect("flightpath.db")
         cur = con.cursor()
+
         cur.execute(
-            "SELECT time_received, lat, lon FROM sentspots WHERE name=? ORDER BY time_sent DESC LIMIT 1",
+            "SELECT time_received, lat, lon "
+            "FROM sentspots "
+            "WHERE name=? "
+            "ORDER BY time_sent DESC "
+            "LIMIT 1",
             (balloon_name,)
         )
+
         row = cur.fetchone()
+
         if row is None:
             return True
+
         last_lat = float(row[1])
         last_lon = float(row[2])
+
         try:
-            last_time = _dt.datetime.strptime(row[0], "%Y-%m-%d %H:%M:%S.%f")
+            last_time = _dt.datetime.strptime(
+                row[0],
+                "%Y-%m-%d %H:%M:%S.%f"
+            )
         except ValueError:
-            last_time = _dt.datetime.strptime(row[0], "%Y-%m-%d %H:%M:%S")
+            last_time = _dt.datetime.strptime(
+                row[0],
+                "%Y-%m-%d %H:%M:%S"
+            )
+
         dt_minutes = (new_time - last_time).total_seconds() / 60.0
 
+        # Out-of-order spots
         if dt_minutes < 0:
             print("Older position than latest stored")
             return False
 
+        lat_diff = abs(new_lat - last_lat)
+
+        lon_diff = abs(new_lon - last_lon)
+
+        # Handle International Date Line crossing
+        if lon_diff > 180:
+            lon_diff = 360 - lon_diff
+
         if dt_minutes <= 10:
-            if abs(new_lat - last_lat) > 1.0 or abs(new_lon - last_lon) > 1.0:
-                print("!!! SANITY FAIL: %.4f,%.4f -> %.4f,%.4f in %.1f min - DROPPING" %
-                      (last_lat, last_lon, new_lat, new_lon, dt_minutes))
+            if lat_diff > 1.0 or lon_diff > 1.0:
+                print(
+                    "!!! SANITY FAIL: %.4f,%.4f -> %.4f,%.4f in %.1f min - DROPPING"
+                    % (
+                        last_lat,
+                        last_lon,
+                        new_lat,
+                        new_lon,
+                        dt_minutes
+                    )
+                )
                 return False
+
         return True
+
     except Exception as e:
         print("position_is_sane error: %s" % e)
         return True
+
     finally:
         if con:
             con.close()
