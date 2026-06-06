@@ -167,7 +167,7 @@ Fixed datetime error: DeprecationWarning: The default datetime adapter is deprec
 
 20260531 Sanity filter added in telemetry.py, ignores +-1° jumps within 10 minutes<br>
 20260604 Sanity filter improvement, handle dateline crossing correctly<br>
-20260605 Sanity filter improvement, changed from block over 1° (> 1.0) jump to block 1° and up (>= 1.0)<br>
+20260605 Sanity filter improvement, changed from block over 1° jump  (> 1.0) to block 1° and up (>= 1.0)<br>
 
 
 
