@@ -166,8 +166,8 @@ A degree of gps jaming detection, when flying over warzones where there is ongoi
 Fixed datetime error: DeprecationWarning: The default datetime adapter is deprecated as of Python 3.12; see the sqlite3 documentation for suggested replacement recipes cur.execute("INSERT INTO newspots VALUES(?,?,?,?,?,?,?,?,?,?)", (row)) in this code: #!/usr/bin/python3
 
 20260531 Sanity filter added in telemetry.py, ignores +-1° jumps within 10 minutes<br>
-20260604 Sanity filter improvement, handle dateline crossing correctly
-20260605 Sanity filter improvement, changed from block over 1° (> 1.0) jump to block 1° and up (>= 1.0)
+20260604 Sanity filter improvement, handle dateline crossing correctly<br>
+20260605 Sanity filter improvement, changed from block over 1° (> 1.0) jump to block 1° and up (>= 1.0)<br>
 
 
 
