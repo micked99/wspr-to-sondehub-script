@@ -147,9 +147,9 @@ With the help of Ai and Eduard/YO3ICT I managed to fix a couple of bugs and impr
 
 Bugfixes:<br>
 
-The wspr db we scrape the data from have evolved over time and had from the begining 12 rows of data but does at the moment have 14 rows, the script throwed a complaint about this, though it worked fine - its now been fixed, tnx Eduard for figuring this part out.<br>
+The wspr database we scrape the data from have evolved over time and had from the begining 12 rows of data but does at the moment have 14 rows, the script throwed a complaint about this, though it worked fine - its now been fixed, tnx Eduard for figuring this part out.<br>
 
-The daycount in the html uploader was set to a fixed 30 day month, it did not count Feb as 28 or take leap years in account etc, its now been fixed and use a library to handle this, this lib is already in most distros but you might need to: pip install python-dateutil, 
+The daycount in the original html uploader was set to a fixed 30 day month, it did not count Feb as 28 or take leap years in account etc, its now been fixed and use a library to handle this, this lib is already in most distros but you might need to: pip install python-dateutil <br>
 Now your duration will correctly show things like:<br>
 1mo 2d instead of 1mo 0d (when crossing real month boundaries)<br>
 February handled correctly (28/29 days)<br>
@@ -157,7 +157,7 @@ No long-term drift<br>
 
 Added features.<br>
 
-You can set a frequency span in balloon.ini which you can filter out and make sure that just balloon data within a specific and narrow freq span in wspr bandpass gets through and decoded, this is important as the balloons in air at the same time have skyrocked over the last years, there can be up to 4 balloons using the same "channel" only divided by frequency.<br>
+You can set a frequency span in balloon.ini which you can filter out and make sure that just balloon data within a specific and narrow freq span in wspr bandpass gets through and decoded, this is important as the balloons in air at have skyrocked over the last couple of years, thanks to the easy to build Traquito, there can be up to 4 balloons using the same "channel" at the same time only divided by frequency.<br>
 
 The html map now automaticly change colour every time it crosses over release longitude, making it easier to keep track of the laps.<br>
 
@@ -169,7 +169,7 @@ Fixed datetime error: DeprecationWarning: The default datetime adapter is deprec
 20260531 Sanity filter added in telemetry.py, ignores +-1° jumps within 10 minutes<br>
 20260604 Sanity filter improvement, handle dateline crossing correctly<br>
 20260605 Sanity filter improvement, changed from block over 1° jump  (> 1.0) to block 1° and up (>= 1.0)<br>
-20260610 Sanity filter improvement, Relaxing filter above 85°N, also tweaking filter to >= 0.9°
+20260610 Sanity filter improvement, Relaxing filter above 85°N, also tweaking filter to >= 0.9°<br>
 
 
 
