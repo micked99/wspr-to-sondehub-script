@@ -138,16 +138,16 @@ PAUSE <br><br>
 
 ## DG4NOB upgrade
 
-Aded some filtering which makes it possible to set a fixed voltage within the tracker code to only let the "correct" voltage throuh - see balloon.ini
-Some instructions inside TelemFunctions.h of the tracker code to set a fixed voltage
+Stefan aded some filtering which makes it possible to set a fixed voltage within the tracker code to only let the "correct" voltage through - 
+see balloon.ini and readme of the ict tracker, also instructions inside TelemFunctions.h of the ict tracker code to set a fixed voltage
 
 ## Bugfix and AI upgrade
 
 With the help of Ai and Eduard/YO3ICT I managed to fix a couple of bugs and improve the script a bit.
 
-Bugfixes:<br>
+Bugfixes / Uppgrades:<br>
 
-The wspr database we scrape the data from have evolved over time and had from the begining 12 rows of data but does at the moment have 14 rows, the script throwed a complaint about this, though it worked fine - its now been fixed, tnx Eduard for figuring this part out.<br>
+The wspr database we scrape the data from have evolved over time and had from the begining 12 rows of data but does at the moment have 14 rows, the script throwed a complaint about this, though it worked fine - its now been fixed, tnx Eduard for figuring the last part out.<br>
 
 The daycount in the original html uploader was set to a fixed 30 day month, it did not count Feb as 28 or take leap years in account etc, its now been fixed and use a library to handle this, this lib is already in most distros but you might need to: pip install python-dateutil <br>
 Now your duration will correctly show things like:<br>
@@ -157,11 +157,11 @@ No long-term drift<br>
 
 Added features.<br>
 
-You can set a frequency span in balloon.ini which you can filter out and make sure that just balloon data within a specific and narrow freq span in wspr bandpass gets through and decoded, this is important as the balloons in air at have skyrocked over the last couple of years, thanks to the easy to build Traquito, there can be up to 4 balloons using the same "channel" at the same time only divided by frequency.<br>
+You can set a frequency span in balloon.ini which you can filter out and make sure that just your balloon data within a specific and narrow freq span in wspr bandpass gets through and decoded, this is important as the balloons in air at have skyrocketed over the last couple of years, thanks to the easy to build Traquito, there can be up to 4 balloons using the same "channel" at the same time only divided by frequency.<br>
 
 The html map now automaticly change colour every time it crosses over release longitude, making it easier to keep track of the laps.<br>
 
-A degree of gps jaming detection, when flying over warzones where there is ongoing jaming, the balloons can usually pick up the incorrectly transmitted gps signal, this mostly results in a fixed "jaming altitude" I have detected about 20 altitudes used, when any of those altitudes is detected it will show on the map as a fixed alt of 12345 meters.
+A degree of gps jaming detection, when flying over warzones where there is ongoing jaming - fake gps signals, the balloons can usually pick up the incorrectly transmitted gps signal, this mostly results in a fixed "jaming altitude" I have detected about 20 altitudes used, when any of those altitudes is detected it will show on the map as a fixed alt of 12345 meters.
 
 20260510
 Fixed datetime error: DeprecationWarning: The default datetime adapter is deprecated as of Python 3.12; see the sqlite3 documentation for suggested replacement recipes cur.execute("INSERT INTO newspots VALUES(?,?,?,?,?,?,?,?,?,?)", (row)) in this code: #!/usr/bin/python3
