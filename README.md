@@ -106,7 +106,7 @@ python3 webscrape.py --csv spots.csv
 
 ## Edit those lines to fit your setup<br>
 
-Line 42 & 170 in webscrape.py and line 654 in telemetry.py to set what hf-band you are using in Mhz<br>
+Line 42 & 170 in webscrape.py and line 625 in telemetry.py to set what hf-band you are using in Mhz<br>
 
 In the html file, insert you google map key in line 16, edit Line 7, then search for "var baseLng =" and <br>
 "var contentString =" and edit to your liking<br>
@@ -170,7 +170,8 @@ Fixed datetime error: DeprecationWarning: The default datetime adapter is deprec
 20260604 Sanity filter improvement, handle dateline crossing correctly<br>
 20260605 Sanity filter improvement, changed from block over 1° jump  (> 1.0) to block 1° and up (>= 1.0)<br>
 20260610 Sanity filter improvement, Relaxing filter above 85°N, also tweaking filter to >= 0.9° <85° <br>
-20260624 Instead of fixed upploader name in balloon.ini "habhub_callsign" now uses actual WSPR rx stations that heard the balloon tx<br>
+
+20260624 Instead of fixed upploader name in balloon.ini "habhub_callsign" now uses actual WSPR rx stations that heard the balloon<br>
 
 
 
