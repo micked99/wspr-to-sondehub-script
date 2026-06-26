@@ -161,7 +161,7 @@ You can set a frequency span in balloon.ini which you can filter out and make su
 
 The html map now automaticly change colour every time it crosses over release longitude, making it easier to keep track of the laps.<br>
 
-A degree of gps jaming detection, when flying over warzones where there is ongoing jaming - fake gps signals, the balloons can usually pick up the incorrectly transmitted gps signal, this mostly results in a fixed "jaming altitude" I have detected about 20 altitudes used, when any of those altitudes is detected it will show on the map as a fixed alt of 12345 meters.
+A degree of gps jaming detection, when flying over warzones where there is ongoing jaming - fake gps signals, the balloons can usually pick up the incorrectly transmitted gps signal, this mostly results in a fixed "jaming altitude" I have detected about 20 altitudes used, when any of those altitudes is detected it will show on the map as a fixed alt of 12345 meters, will probably revaluate this in the future, next I will looks how a balloon behaves when in an such area now that I have the sanetyfilter in place.<br>
 
 20260510
 Fixed datetime error: DeprecationWarning: The default datetime adapter is deprecated as of Python 3.12; see the sqlite3 documentation for suggested replacement recipes cur.execute("INSERT INTO newspots VALUES(?,?,?,?,?,?,?,?,?,?)", (row)) in this code: #!/usr/bin/python3
