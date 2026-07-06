@@ -1,6 +1,7 @@
 #!/usr/bin/python3.6
 
 from base64 import b64encode
+import ast
 import configparser
 import csv
 import datetime
@@ -274,6 +275,7 @@ def decode_telemetry(spot_pos, spot_tele):
     if alt == 2040: alt=12345
     if alt == 2760: alt=12345
     if alt == 2920: alt=12345
+    if alt == 3000: alt=12345
     if alt == 2300: alt=12345
     if alt == 4960: alt=12345
     if alt == 5700: alt=12345
@@ -618,11 +620,19 @@ def process_telemetry(spots, balloons, habhub_callsign, push_habhub, push_sondeh
     except:
         blacklist = []
 
+    # check if there is a grid blacklist (6-char Maidenhead locators to ignore)
+    try:
+        if config['main']['blacklist_grids']:
+            blacklist_grids = ast.literal_eval(config['main']['blacklist_grids'])
+            blacklist_grids = [g.strip().upper() for g in blacklist_grids]
+    except:
+        blacklist_grids = []
+
     for row in spots:
         # print(row)
         if re.match('(^0|^Q).[0-9].*', row[1]):
             #         print(', '.join(row))
-            if re.match('18.*', row[2]): # Band in Mhz
+            if re.match('21.*', row[2]): # Band in Mhz
                 spot_minute = row[0].minute % 10
                 spots_tele.append(row)
 
@@ -880,6 +890,11 @@ def process_telemetry(spots, balloons, habhub_callsign, push_habhub, push_sondeh
                                             telemetry['lat'],
                                             telemetry['lon']):
                                         print("SANITY FILTER REJECTED POSITION - NOT UPLOADING")
+                                        continue
+
+                                    # Reject known-bad grid locators BEFORE uploading anywhere
+                                    if telemetry['loc'].upper() in blacklist_grids:
+                                        print("GRID BLACKLIST REJECTED POSITION (%s) - NOT UPLOADING" % telemetry['loc'])
                                         continue
 
                                 #if telemetry['batt'] > 4.55 or telemetry['batt'] < 4.62:   #new Kevin battery filter
