@@ -1,9 +1,11 @@
 # hab-wspr
 Following is the original readme with basic setup info, 
+
 my notes starts below:  ////// End of original readme /////
+
 Original source: https://github.com/sm3ulc/hab-wspr
 
-Get the latest updates at the very end of this readme
+Read about the latest updates at the very end of this readme
 
 
 ## High altittude ballon tracking via WS
