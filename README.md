@@ -173,7 +173,7 @@ Fixed datetime error: DeprecationWarning: The default datetime adapter is deprec
 
 20260624 Instead of fixed upploader name in balloon.ini "habhub_callsign" now uses actual WSPR rx stations that heard the balloon<br>
 
-20260706 Aditional filtering, this ads a 6 grid filter to be put in balloon.ini to help discard GPS jammed position<br>
+20260706 Additional filtering, this ads a 6 grid filter to be put in balloon.ini to help discard GPS jammed positions<br>
 
 
 
