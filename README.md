@@ -179,6 +179,10 @@ Fixed datetime error: DeprecationWarning: The default datetime adapter is deprec
 
 20260706 Additional filtering, this ads a 6 grid filter to be put in balloon.ini to help discard GPS jammed positions<br>
 
+20260710 GPS jaming detection improved, known jamed altitudes are now discarded, detected fake alts can be aded to balloon.ini<br>
+
+
+
 
 
 
