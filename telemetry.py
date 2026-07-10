@@ -30,6 +30,18 @@ config = configparser.ConfigParser()
 config.read('balloon.ini')
 habhub_callsign = config['main'].get('habhub_callsign', '')
 too_long = config['main']['too_long']
+
+# List of known-bad raw altitude decodes caused by GPS jamming/spoofing.
+# Any of these values decoded from a telemetry packet get replaced with the
+# 12345 sentinel (which is then rejected before upload - see blacklist_altitudes).
+try:
+    known_bad_altitudes = ast.literal_eval(config['main']['known_bad_altitudes'])
+    known_bad_altitudes = [int(a) for a in known_bad_altitudes]
+except:
+    known_bad_altitudes = [0, 160, 180, 380, 400, 440, 460, 480, 500, 520, 540,
+                            560, 580, 600, 620, 760, 900, 940, 960, 980, 1000,
+                            1020, 1240, 1380, 2040, 2760, 2920, 3000, 2300,
+                            4960, 5700]
 push_html = config['main']['push_html']
 
 # Single persistent Sondehub uploader for the whole run - it manages its
@@ -248,37 +260,8 @@ def decode_telemetry(spot_pos, spot_tele):
     if  alt > 15600:
         print("Bogus packet. Too high altitude!! locking to 12000")
         alt=12000
-    if alt == 0: alt=12345
-    if alt == 160: alt=12345
-    if alt == 180: alt=12345
-    if alt == 380: alt=12345
-    if alt == 400: alt=12345
-    if alt == 440: alt=12345
-    if alt == 460: alt=12345
-    if alt == 480: alt=12345
-    if alt == 500: alt=12345
-    if alt == 520: alt=12345
-    if alt == 540: alt=12345
-    if alt == 560: alt=12345
-    if alt == 580: alt=12345
-    if alt == 600: alt=12345
-    if alt == 620: alt=12345
-    if alt == 760: alt=12345
-    if alt == 900: alt=12345
-    if alt == 940: alt=12345
-    if alt == 960: alt=12345
-    if alt == 980: alt=12345
-    if alt == 1000: alt=12345
-    if alt == 1020: alt=12345
-    if alt == 1240: alt=12345
-    if alt == 1380: alt=12345
-    if alt == 2040: alt=12345
-    if alt == 2760: alt=12345
-    if alt == 2920: alt=12345
-    if alt == 3000: alt=12345
-    if alt == 2300: alt=12345
-    if alt == 4960: alt=12345
-    if alt == 5700: alt=12345
+    if alt in known_bad_altitudes:
+        alt = 12345
 
     # Sublocator
     lsub1=lsub1+65
@@ -469,8 +452,8 @@ def position_is_sane(balloon_name, new_time, new_lat, new_lon):
             if lon_diff > 180.0:
                 lon_diff = 360.0 - lon_diff
 
-            lat_limit = 0.9
-            lon_limit = 0.9
+            lat_limit = 0.75
+            lon_limit = 0.75
 
             # Relax filter near the pole
             if max(abs(last_lat), abs(new_lat)) >= 85.0:
@@ -628,6 +611,14 @@ def process_telemetry(spots, balloons, habhub_callsign, push_habhub, push_sondeh
     except:
         blacklist_grids = []
 
+    # check if there is an altitude blacklist (bogus/jammed altitudes to ignore)
+    try:
+        if config['main']['blacklist_altitudes']:
+            blacklist_altitudes = ast.literal_eval(config['main']['blacklist_altitudes'])
+            blacklist_altitudes = [int(a) for a in blacklist_altitudes]
+    except:
+        blacklist_altitudes = [12345]
+
     for row in spots:
         # print(row)
         if re.match('(^0|^Q).[0-9].*', row[1]):
@@ -679,7 +670,7 @@ def process_telemetry(spots, balloons, habhub_callsign, push_habhub, push_sondeh
         # Loop through all spots and try to find matching telemetrypacket
         spot_last = spots[0]
         spot_oldtime = datetime.datetime(1970, 1, 1, 1, 1) 
-        for row in spots:
+        for row in list(spots):
             spot_call = row[1]
 
             if balloon_call == spot_call:
@@ -895,6 +886,11 @@ def process_telemetry(spots, balloons, habhub_callsign, push_habhub, push_sondeh
                                     # Reject known-bad grid locators BEFORE uploading anywhere
                                     if telemetry['loc'].upper() in blacklist_grids:
                                         print("GRID BLACKLIST REJECTED POSITION (%s) - NOT UPLOADING" % telemetry['loc'])
+                                        continue
+
+                                    # Reject bogus altitudes (GPS jamming/spoofing) BEFORE uploading anywhere
+                                    if telemetry['alt'] in blacklist_altitudes:
+                                        print("ALTITUDE BLACKLIST REJECTED POSITION (%s) - NOT UPLOADING" % telemetry['alt'])
                                         continue
 
                                 #if telemetry['batt'] > 4.55 or telemetry['batt'] < 4.62:   #new Kevin battery filter
