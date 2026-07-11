@@ -181,7 +181,7 @@ Fixed datetime error: DeprecationWarning: The default datetime adapter is deprec
 
 20260710 GPS jaming detection improved, known jamed altitudes are now discarded, fake alts can be aded to balloon.ini<br>
 
-20260711 Bugfixes and lots more blacklist_grids = and altitudes are added<br>
+20260711 Bugfixes and lots more blacklist_grids and altitudes are added<br>
 
 
 
