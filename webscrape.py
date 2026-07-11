@@ -39,7 +39,7 @@ for b in balloons:
 def getspots (nrspots):
 #    print("Fetching...")
 #    wiki = "https://wsprnet.org/olddb?mode=html&band=all&limit=" + str(nrspots) + "&findcall=&findreporter=&sort=spotnum" # dump all bands
-    wiki = "https://www.wsprnet.org/olddb?mode=html&band=15&limit=" + str(nrspots) + "&findcall=&findreporter=&sort=spotnum" # dump only 15 meter band
+    wiki = "https://www.wsprnet.org/olddb?mode=html&band=10&limit=" + str(nrspots) + "&findcall=&findreporter=&sort=spotnum" # dump only 15 meter band
     try:
         page = requests.get(wiki)
     except requests.exceptions.RequestException as e:
@@ -166,8 +166,8 @@ def balloonfilter(spots,balloons):
        #if re.match('(^1|^0|^Q).[0-9].*', row[1]):
         if re.match('(^0|^Q).[0-9].*', row[1]):
             
-           #if re.match('21.*', row[2]) or re.match('24.*', row[2]): # Coarse bogus filter - filters to save two bands
-            if re.match('21.*', row[2]):                             # Coarse bogus filter - filters to save one band
+           
+            if re.match('28.*', row[2]):  # Coarse bogus filter - filters to save one band
                 #               print("Found", row)
                 filtered.append(row)
 
