@@ -32,8 +32,8 @@ habhub_callsign = config['main'].get('habhub_callsign', '')
 too_long = config['main']['too_long']
 
 # List of known-bad raw altitude decodes caused by GPS jamming/spoofing.
-# Any of these values decoded from a telemetry packet get replaced with the
-# 12345 sentinel (which is then rejected before upload - see blacklist_altitudes).
+# Any telemetry packet whose decoded altitude matches one of these values is
+# rejected before upload (see the known_bad_altitudes check in process_telemetry).
 # Configured entirely via balloon.ini - if missing/empty/invalid, no altitudes
 # are treated as known-bad (fails open, same pattern as blacklist_grids).
 try:
@@ -259,15 +259,10 @@ def decode_telemetry(spot_pos, spot_tele):
 
     alt=(lsub2_tmp-lsub2*1068)*20
 
-    # Handle bogus altitudes
-    if  alt > 15600:
-        print("Bogus packet. Too high altitude!! locking to 12000")
-        alt=12000
-    # Preserve the real decoded altitude for logging purposes - once alt is
-    # overwritten with the 12345 sentinel below, the original value is lost.
-    alt_raw = alt
-    if alt in known_bad_altitudes:
-        alt = 12345
+    # Handle bogus altitudes // Max alt from ub4 telem is 21340m
+    if  alt > 15020:
+        print("Bogus packet. Too high altitude!! locking to 13333")
+        alt=13333
 
     # Sublocator
     lsub1=lsub1+65
@@ -323,7 +318,7 @@ def decode_telemetry(spot_pos, spot_tele):
           (  spot_pos_time, spot_pos_call, lat, lon, loc, alt, temp, batt, speed, gps, sats ))
 
     telemetry = {'time':spot_pos_time, "call":spot_pos_call, "lat":lat, "lon":lon, "loc":loc, "alt": alt,
-                 "alt_raw": alt_raw, "temp":temp, "batt":batt, "speed":speed, "gps":gps, "sats":sats }
+                 "temp":temp, "batt":batt, "speed":speed, "gps":gps, "sats":sats }
 
     return telemetry
 
@@ -448,7 +443,7 @@ def position_is_sane(balloon_name, new_time, new_lat, new_lon):
             print("Older position than latest stored")
             return False
 
-        if dt_minutes <= 10:
+        if dt_minutes <= 17:
 
             lat_diff = abs(new_lat - last_lat)
 
@@ -458,8 +453,8 @@ def position_is_sane(balloon_name, new_time, new_lat, new_lon):
             if lon_diff > 180.0:
                 lon_diff = 360.0 - lon_diff
 
-            lat_limit = 0.75
-            lon_limit = 0.75
+            lat_limit = 0.7
+            lon_limit = 0.7
 
             # Relax filter near the pole
             if max(abs(last_lat), abs(new_lat)) >= 85.0:
@@ -616,14 +611,6 @@ def process_telemetry(spots, balloons, habhub_callsign, push_habhub, push_sondeh
             blacklist_grids = [g.strip().upper() for g in blacklist_grids]
     except:
         blacklist_grids = []
-
-    # check if there is an altitude blacklist (bogus/jammed altitudes to ignore)
-    try:
-        if config['main']['blacklist_altitudes']:
-            blacklist_altitudes = ast.literal_eval(config['main']['blacklist_altitudes'])
-            blacklist_altitudes = [int(a) for a in blacklist_altitudes]
-    except:
-        blacklist_altitudes = [12345]
 
     for row in spots:
         # print(row)
@@ -895,8 +882,8 @@ def process_telemetry(spots, balloons, habhub_callsign, push_habhub, push_sondeh
                                         continue
 
                                     # Reject bogus altitudes (GPS jamming/spoofing) BEFORE uploading anywhere
-                                    if telemetry['alt'] in blacklist_altitudes:
-                                        print("ALTITUDE BLACKLIST REJECTED POSITION (%s) - NOT UPLOADING" % telemetry['alt_raw'])
+                                    if telemetry['alt'] in known_bad_altitudes:
+                                        print("ALTITUDE BLACKLIST REJECTED POSITION (%s) - NOT UPLOADING" % telemetry['alt'])
                                         continue
 
                                 #if telemetry['batt'] > 4.55 or telemetry['batt'] < 4.62:   #new Kevin battery filter
