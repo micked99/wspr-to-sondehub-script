@@ -399,14 +399,44 @@ def addflightpathdb(name, time_rec, tel_lat, tel_lon, tel_alt, tel_speed):
 
 
 def position_is_sane(balloon_name, new_time, new_lat, new_lon):
-    """Reject impossible jumps while allowing dateline crossings."""
+    """
+    Reject impossible position jumps.
+    Returns True if the position looks sane, False if it should be dropped.
+    """
     import sqlite3 as _sq
     import datetime as _dt
+    import math
+
+    # Sanity limits
+    # Do NOT use a fixed latitude/longitude jump limit for normal tracking.
+    # A balloon can legitimately move more than 0.7 degrees between sparse
+    # telemetry packets.  Instead, use the time between packets and calculate
+    # the implied speed.
+    #
+    # For short gaps, retain the original protection against the known GPS /
+    # Maidenhead decoding error where latitude or longitude can suddenly jump
+    # by about 1 degree.
+    SHORT_GAP_MINUTES = 10.0
+    SHORT_GAP_JUMP_LIMIT = 1.0
+    MAX_SPEED_KMH = 400.0
 
     con = None
     try:
         con = _sq.connect("flightpath.db")
         cur = con.cursor()
+
+        # Create the table if it doesn't exist yet
+        cur.execute(
+            'CREATE TABLE IF NOT EXISTS sentspots('
+            'name varchar(15), '
+            'time_sent varchar(20), '
+            'time_received varchar(20), '
+            'lat varchar(20), '
+            'lon varchar(20), '
+            'alt integer, '
+            'speed integer)'
+        )
+        con.commit()
 
         cur.execute(
             "SELECT time_received, lat, lon "
@@ -416,9 +446,9 @@ def position_is_sane(balloon_name, new_time, new_lat, new_lon):
             "LIMIT 1",
             (balloon_name,)
         )
-
         row = cur.fetchone()
 
+        # No previous position → accept (start of track)
         if row is None:
             return True
 
@@ -426,64 +456,59 @@ def position_is_sane(balloon_name, new_time, new_lat, new_lon):
         last_lon = float(row[2])
 
         try:
-            last_time = _dt.datetime.strptime(
-                row[0],
-                "%Y-%m-%d %H:%M:%S.%f"
-            )
+            last_time = _dt.datetime.strptime(row[0], "%Y-%m-%d %H:%M:%S.%f")
         except ValueError:
-            last_time = _dt.datetime.strptime(
-                row[0],
-                "%Y-%m-%d %H:%M:%S"
-            )
+            last_time = _dt.datetime.strptime(row[0], "%Y-%m-%d %H:%M:%S")
 
         dt_minutes = (new_time - last_time).total_seconds() / 60.0
 
-        # Out-of-order spots
-        if dt_minutes < 0:
-            print("Older position than latest stored")
+        # Reject clearly out-of-order packets
+        if dt_minutes < -1.0:
+            print("Older position than latest stored (%.1f min) - DROPPING" % dt_minutes)
             return False
 
-        if dt_minutes <= 17:
+        lat_diff = abs(new_lat - last_lat)
+        lon_diff = abs(new_lon - last_lon)
+        if lon_diff > 180.0:
+            lon_diff = 360.0 - lon_diff
 
-            lat_diff = abs(new_lat - last_lat)
-
-            lon_diff = abs(new_lon - last_lon)
-
-            # Dateline-aware longitude difference
-            if lon_diff > 180.0:
-                lon_diff = 360.0 - lon_diff
-
-            lat_limit = 0.7
-            lon_limit = 0.7
-
-            # Relax filter near the pole
-            if max(abs(last_lat), abs(new_lat)) >= 85.0:
-                lat_limit = 2.2
-                lon_limit = 3.0
-
-            if lat_diff >= lat_limit or lon_diff >= lon_limit:
+        # For short gaps only, keep the old-style jump protection.
+        # This catches the known ~1 degree GPS/grid decoding errors without
+        # blocking legitimate long-distance movement when telemetry is sparse.
+        if 0.0 <= dt_minutes <= SHORT_GAP_MINUTES:
+            if lat_diff >= SHORT_GAP_JUMP_LIMIT or lon_diff >= SHORT_GAP_JUMP_LIMIT:
                 print(
-                    "!!! SANITY FAIL: %.4f,%.4f -> %.4f,%.4f in %.1f min - DROPPING"
-                    % (
-                        last_lat,
-                        last_lon,
-                        new_lat,
-                        new_lon,
-                        dt_minutes
-                    )
+                    "!!! SANITY FAIL (short-gap jump): %.5f,%.5f -> %.5f,%.5f "
+                    "(dlat=%.3f dlon=%.3f) in %.1f min - DROPPING"
+                    % (last_lat, last_lon, new_lat, new_lon, lat_diff, lon_diff, dt_minutes)
+                )
+                return False
+
+        # Speed check for any meaningful time gap.
+        # This is now the main sanity check for normal balloon movement.
+        if dt_minutes > 0.2:
+            dist_km = math.sqrt(
+                (lat_diff * 111.0) ** 2 +
+                (lon_diff * 111.0 * abs(math.cos(math.radians(last_lat)))) ** 2
+            )
+            speed_kmh = dist_km / (dt_minutes / 60.0)
+            if speed_kmh > MAX_SPEED_KMH:
+                print(
+                    "!!! SANITY FAIL (speed): %.5f,%.5f -> %.5f,%.5f "
+                    "(%.0f km/h) in %.1f min - DROPPING"
+                    % (last_lat, last_lon, new_lat, new_lon, speed_kmh, dt_minutes)
                 )
                 return False
 
         return True
 
     except Exception as e:
-        print("position_is_sane error: %s" % e)
-        return True
+        print("position_is_sane error: %s - DROPPING packet" % e)
+        return False
 
     finally:
         if con:
             con.close()
-
 import logging
 from pprint import pformat
 
