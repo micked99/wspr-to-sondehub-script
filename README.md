@@ -185,6 +185,8 @@ Fixed datetime error: DeprecationWarning: The default datetime adapter is deprec
 
 20260808 Tidying up the rejected altitudes code, rounding lat long to 4 decimals in html upload, more blacklist_grids/altitudes added.<br>
 
+20260913 Reworked filtering, now using time and speed o filter out bogus spots, more blacklisted grids and altitudes added.<br>
+
 
 
 
