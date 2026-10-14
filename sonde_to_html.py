@@ -2,6 +2,7 @@ import fileinput
 import sys
 import ftplib
 import datetime
+import calendar
 import configparser
 import ftplib
 import json
@@ -16,31 +17,32 @@ ftp_server = config['main']['ftp_server']
 ftp_username = config['main']['ftp_username']
 ftp_password = config['main']['ftp_password']
 
+def _add_months(dt, n):
+    # add n calendar months, clamping the day to the length of the target month
+    m = dt.month - 1 + n
+    y = dt.year + m // 12
+    m = m % 12 + 1
+    d = min(dt.day, calendar.monthrange(y, m)[1])
+    return dt.replace(year=y, month=m, day=d)
+
 def getDuration(then, now, interval = "default"):
 
-    # Returns a duration as specified by variable interval
-    # Functions, except totalDuration, returns [quotient, remainder]
-    
-    duration = now - then # For build-in functions
-    duration_in_s = duration.total_seconds() 
+    # Returns the calendar duration between then and now, split into
+    # months / days / hours / minutes (real calendar months, not 30-day ones)
 
-    def months():
-        return duration_in_s // 2592000 # Seconds in a month=2592000.
+    months = (now.year - then.year) * 12 + (now.month - then.month)
+    anchor = _add_months(then, months)
+    if anchor > now:
+        months -= 1
+        anchor = _add_months(then, months)
 
-    def days():
-        return (duration_in_s // 86400 - 30 * months()) % 30# Seconds in a day = 86400
-
-    def hours():
-        return (duration_in_s // 3600 - 24 * days()) % 24# Seconds in an hour = 3600
-
-    def minutes():
-        return (duration_in_s // 60 - 60 * hours()) % 60# Seconds in a minute = 60
+    rest = int((now - anchor).total_seconds())
 
     return {
-        'months': int(months()),
-        'days': int(days()),
-        'hours': int(hours()),
-        'minutes': int(minutes()),
+        'months': months,
+        'days': rest // 86400,
+        'hours': (rest % 86400) // 3600,
+        'minutes': (rest % 3600) // 60,
     }[interval]
 
 def push_balloon_to_html(balloon_name, telemetry):
