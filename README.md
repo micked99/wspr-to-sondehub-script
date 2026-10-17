@@ -187,7 +187,7 @@ Fixed datetime error: DeprecationWarning: The default datetime adapter is deprec
 
 20260913 Reworked filtering, now using time and speed o filter out bogus spots, more blacklisted grids and altitudes added.<br>
 
-20261017 Adad 30 distinct colours to the trace of the balloon in the .html <br>
+20261017 Aded 30 distinct colours to the trace of the balloon in the .html <br>
 
 
 
